@@ -1,0 +1,48 @@
+table {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    margin-bottom: 30px;
+}
+
+thead {
+    border-bottom: 1px solid black;
+}
+
+tfoot {
+    border-top: 1px solid black;
+}
+
+caption {
+    caption-side: top;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 20px;
+}
+
+@page {
+    size: 80mm auto;
+    margin-bottom: -1300px;
+    margin-top: -1200px;
+}
+
+.current-time-for-report {
+    font-size: 30px; 
+    text-align: right;
+    font-weight: bold;
+  }
+
+@media print {
+    body {
+        width: 80mm;
+        margin: 0; /* Ensure no margins are added */
+    }
+
+    table {
+        font-size: 30px;
+    }
+
+    caption {
+        font-size: 50px;
+    }
+}
