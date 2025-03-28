@@ -23,8 +23,10 @@ return new class extends Migration
             $table->string('ar_brand')->nullable();
             $table->string('en_brand')->nullable();
             $table->string('store')->nullable();
-            $table->string('barcode')->nullable()->unique();
+            $table->string('barcode')->nullable();
+            $table->string('sku_code')->nullable();
             $table->date('creation_date')->nullable();
+            $table->boolean('view_in_app')->default(0);
             $table->json('images')->nullable();
             $table->json('additional_data')->nullable();
             $table->timestamps();

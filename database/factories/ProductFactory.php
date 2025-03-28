@@ -17,7 +17,7 @@ class ProductFactory extends Factory
     public function definition()
     {
         $productName = $this->faker->unique()->name();
-        $productDescription = $this->faker->unique()->sentence();
+        $productDescription = $this->faker->unique()->sentence(100);
         $productBrand= $this->faker->randomElement([
             'samsung', 'lg', 'sony', 'apple', 'huawei', 'xiaomi', 'oppo', 'vivo', 'oneplus', 'motorola'
         ]);
@@ -32,8 +32,8 @@ class ProductFactory extends Factory
             'store' => 'Photo Store',
             'barcode' => $this->faker->unique()->ean13(),
             'creation_date' => $productCreationDate,
-            'images' => json_encode(['camera1.jpg']),
-            'additional_data' => json_encode(['resolution' => '24MP', 'lens' => '18-55mm']),
+            'images' => ['camera1.jpg'],
+            'additional_data' => ['resolution' => '24MP', 'lens' => '18-55mm'],
             'price' => rand(100, 500)
         ];
     }

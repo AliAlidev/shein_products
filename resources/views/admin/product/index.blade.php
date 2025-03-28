@@ -1,6 +1,44 @@
 @extends('admin.layouts.master')
 
 @push('css')
+    <style>
+        .export-btn {
+            position: relative;
+        }
+
+        .export-loader {
+            display: none;
+        }
+
+        .export-btn.loading .export-content {
+            visibility: hidden;
+        }
+
+        .export-btn.loading .export-loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Add to your CSS file */
+        .modal-body .form-group {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-body .form-control-plaintext {
+            padding: 0.375rem 0;
+            font-weight: 500;
+        }
+
+        .modal-body label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+    </style>
 @endpush
 
 @section('main-content')
@@ -28,11 +66,39 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <a href="#" class="btn btn-icon icon-left btn-success" style="height: 35px">
-                                        <i class="fas fa-file-excel"></i> Export Excel
+                                    <a href="{{ route('product.create') }}"
+                                        class="btn btn-icon icon-left btn-success export-all-btn" style="height: 35px">
+                                           <i class="fa fa-plus"></i> Create
                                     </a>
-                                    <a href="#" class="btn btn-icon icon-left btn-primary" style="height: 35px"><i
-                                            class="fas fa-plus"></i> Sync</a>
+                                    <a href="{{ route('products.export') }}"
+                                        class="btn btn-icon icon-left btn-success export-all-btn" style="height: 35px">
+                                        <span class="export-content">
+                                            <i class="fas fa-file-excel"></i> Export All
+                                        </span>
+                                        <span class="export-loader d-none">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                            Exporting...
+                                        </span>
+                                    </a>
+                                    <a href="{{ route('products.current.export') }}"
+                                        class="btn btn-icon icon-left btn-success export-current-btn" style="height: 35px">
+                                        <span class="export-content">
+                                            <i class="fas fa-file-excel"></i> Export Current
+                                        </span>
+                                        <span class="export-loader d-none">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                            Exporting...
+                                        </span>
+                                    </a>
+                                    <a href="{{ route('products.sync') }}"
+                                        class="btn btn-icon icon-left btn-primary sync-products-btn" style="height: 35px">
+                                        <span class="export-content">
+                                            <i class="fas fa-sync"></i> Sync Products
+                                        </span>
+                                        <span class="export-loader d-none">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                            Syncing...
+                                        </span></a>
                                 </div>
                             </div>
 
@@ -53,7 +119,7 @@
                                             <th>Store</th>
                                             <th>Barcode</th>
                                             <th>Creation Date</th>
-                                            <th>In App View</th>
+                                            <th>View In App</th>
                                             <th style="width: 10%">Actions</th>
                                         </tr>
                                     </thead>
@@ -65,6 +131,180 @@
             </div>
         </div>
     </section>
+
+    <!-- Details Modal -->
+    <div class="modal fade" id="productDetailsModal" tabindex="-1" role="dialog"
+        aria-labelledby="productDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productDetailsModalLabel">Product Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Arabic Name:</label>
+                                <p class="detail-ar-name form-control-plaintext"></p>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">English Name:</label>
+                                <p class="detail-en-name form-control-plaintext"></p>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Price:</label>
+                                <p class="detail-price form-control-plaintext"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Arabic Brand:</label>
+                                <p class="detail-ar-brand form-control-plaintext"></p>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">English Brand:</label>
+                                <p class="detail-en-brand form-control-plaintext"></p>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Barcode:</label>
+                                <p class="detail-barcode form-control-plaintext"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Arabic Description:</label>
+                                <p class="detail-ar-desc form-control-plaintext"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">English Description:</label>
+                                <p class="detail-en-desc form-control-plaintext"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Store:</label>
+                                <p class="detail-store form-control-plaintext"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">Creation Date:</label>
+                                <p class="detail-creation-date form-control-plaintext"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label style="font-weight: bolder; font-size: 14px">View In App:</label>
+                                <p class="detail-in-app form-control-plaintext"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="productEditModal" tabindex="-1" role="dialog"
+        aria-labelledby="productDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productDetailsModalLabel">Product Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="" method="POST" data-update-url="{{ route('product.edit') }}" id="update-form">
+                    @csrf
+                    <input type="hidden" id="product_id" name="product_id">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Name:</label>
+                                    <input type="text" name="ar_name" class="detail-ar-name form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>English Name:</label>
+                                    <input type="text" name="en_name" class="detail-en-name form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Price:</label>
+                                    <input type="number" name="price" class="detail-price form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Brand:</label>
+                                    <input type="text" name="ar_brand" class="detail-ar-brand form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>English Brand:</label>
+                                    <input type="text" name="en_brand" class="detail-en-brand form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Barcode:</label>
+                                    <input type="text" name="barcode" class="detail-barcode form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Description:</label>
+                                    <textarea name="ar_description" class="detail-ar-desc form-control h-25" cols="30" rows="5"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>English Description:</label>
+                                    <textarea name="en_description" class="detail-en-desc form-control h-25" cols="30" rows="5"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Store:</label>
+                                    <input type="text" name="store" class="detail-store form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Creation Date:</label>
+                                    <input type="date" name="creation_date" class="detail-creation-date form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>View In App:</label>
+                                    <input type="checkbox" name="view_in_app" class="detail-in-app form-control"
+                                        style="width: 20px">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary modal-edit-btn" data-dismiss="modal">Update</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('css')
@@ -77,4 +317,5 @@
     <script src="{{ asset('assets/modules/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('assets/modules/datatables.net-select-bs4/js/select.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('js/product/index.js') }}"></script>
+    <script src="{{asset('assets/modules/sweetalert/sweetalert2@11.js')}}"></script>
 @endsection

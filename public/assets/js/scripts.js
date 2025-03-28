@@ -625,12 +625,3 @@ $(function() {
   }
 });
 
-// highcharts resize
-
-$('[data-toggle="sidebar"]').on('click', function() {
-    setTimeout(function() {
-        $('#earningGraph').highcharts().reflow();
-
-    }, 400);
-    
-});

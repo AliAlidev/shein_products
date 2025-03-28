@@ -8,19 +8,11 @@
 
     <ul class="navbar-nav navbar-right">
         <li class="dropdown">
-            <a data-toggle="tooltip" data-placement="bottom" title="Go to Frontend" href="" class="nav-link nav-link-lg beep" target="_blank"><i class="fa fa-globe"></i></a>
-        </li>
-        <li class="dropdown">
             <a href="" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-                <img alt="image" src="" class="rounded-circle mr-1">
+                <i class="fa fa-user"></i>
                 <div class="d-sm-none d-lg-inline-block">{{ __('Hi') }}, {{ auth()->user()->name }}</div>
             </a>
             <div class="dropdown-menu dropdown-menu-right">
-                <a href="" class="dropdown-item has-icon">
-                    <i class="far fa-user"></i> {{ __('Profile') }}
-                </a>
-
-
                 <div class="dropdown-divider"></div>
                 <a href="{{ route('logout') }}" onclick="event.preventDefault();document.getElementById('logout-form').submit();" class="dropdown-item has-icon text-danger">
                     <i class="fas fa-sign-out-alt"></i> {{ __('Logout') }}

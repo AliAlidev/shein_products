@@ -9,4 +9,12 @@ class Product extends Model
 {
     use HasFactory;
     protected $guarded = [];
+    protected $casts = [
+        'images' => 'array',
+        'additional_data' => 'array'
+    ];
+
+    function primaryImage() {
+        return $this->images[0] ?? null;
+    }
 }
