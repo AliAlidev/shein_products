@@ -21,19 +21,5 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/4.5.6/css/ionicons.min.css">
 
-    <!-- iziToast -->
-    <link rel="stylesheet" href="{{ asset('assets/modules/izitoast/dist/css/iziToast.min.css') }}">
-    <!-- custome slider -->
-
-    <link rel="stylesheet" href="{{asset('themes/library/custom-carousel/css/owl.carousel.min.css')}}">
-    <link rel="stylesheet" href="{{asset('themes/library/custom-carousel/css/owl.theme.default.min.css')}}">
-
-
-    <!-- custom style -->
-
-    <link rel="stylesheet" href="{{ asset('themes/css/custom.css') }}">
-
-    <script src="https://js.stripe.com/v3/"></script>
-    @stack('extra-style')
     @yield('style')
 </head>

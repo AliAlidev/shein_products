@@ -6,12 +6,6 @@
     <div id="main-wrapper">
 
         @yield('main-content')
-
-        @if (!request()->is('search'))
-            @include('frontend.partials._footer')
-        @endif
     </div>
-    <!-- Wrapper / End -->
-    @include('frontend.partials._scripts')
 </body>
 </html>
