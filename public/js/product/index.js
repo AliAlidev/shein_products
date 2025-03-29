@@ -67,15 +67,14 @@ $(document).ready(function () {
             data: params,
             success: function (data) {
                 if (data.download_url) {
-                    showSuccessMessage('success', data.message);
+                    showMessage('success', data.message);
                     window.location.href = data.download_url;
                 }
                 hideLoader($btn);
             },
             error: function (xhr, status, error) {
-                showSuccessMessage('error', error.responseJSON.message);
-                console.error('Export failed:', error);
                 hideLoader($btn);
+                showMessage('error', xhr.responseJSON.message);
             }
         });
     });
@@ -91,15 +90,14 @@ $(document).ready(function () {
                 method: 'GET',
                 success: function (data) {
                     if (data.download_url) {
-                        showSuccessMessage('success', data.message);
+                        showMessage('success', data.message);
                         window.location.href = data.download_url;
                     }
                     hideLoader($btn);
                 },
                 error: function (xhr, status, error) {
-                    showSuccessMessage('error', error.responseJSON.message);
-                    console.error('Export failed:', error);
                     hideLoader($btn);
+                    showMessage('error', xhr.responseJSON.message);
                 }
             });
         }
@@ -115,16 +113,15 @@ $(document).ready(function () {
                 url: $btn.attr('href'),
                 method: 'GET',
                 success: function (data) {
-                    showSuccessMessage('success', data.message);
+                    showMessage('success', data.message);
                     if (data.download_url) {
                         window.location.href = data.download_url;
                     }
                     hideLoader($btn);
                 },
                 error: function (xhr, status, error) {
-                    showSuccessMessage('error', error.responseJSON.message);
-                    console.error('Export failed:', error);
                     hideLoader($btn);
+                    showMessage('error', xhr.responseJSON.message);
                 }
             });
         }
@@ -148,6 +145,17 @@ $(document).ready(function () {
                 $('#productDetailsModal .detail-barcode').text(data.barcode);
                 $('#productDetailsModal .detail-creation-date').text(data.creation_date);
                 $('#productDetailsModal .detail-in-app').text(data.view_in_app ? 'Yes' : 'No');
+                $('#productDetailsModal #view-image-preview').empty();
+                if(data.images){
+                    data.images.forEach(image => {
+                        const $img = $('<img>', {
+                            src: image,
+                            class: 'img-thumbnail mr-2 mb-2',
+                            style: 'max-width: 100px; max-height: 100px;'
+                        });
+                        $('#productDetailsModal #view-image-preview').append($img);
+                    });
+                }
                 $('#productDetailsModal').modal({
                     backdrop: 'static',
                     keyboard: false
@@ -175,47 +183,82 @@ $(document).ready(function () {
                 $('#productEditModal .detail-barcode').val(data.barcode);
                 $('#productEditModal .detail-creation-date').val(data.creation_date);
                 $('#productEditModal #product_id').val(data.id);
+                $('#productEditModal #edit-image-preview').empty();
+                if(data.images){
+                    data.images.forEach(image => {
+                        const $img = $('<img>', {
+                            src: image,
+                            class: 'img-thumbnail mr-2 mb-2',
+                            style: 'max-width: 100px; max-height: 100px;'
+                        });
+                        $('#productEditModal #edit-image-preview').append($img);
+                    });
+                }
                 var checked = data.view_in_app ? true : false;
                 $('#productEditModal .detail-in-app').attr('checked', checked);
-                var formAction = $('#update-form').data('updateUrl') +'/' + data.id;
+                var formAction = $('#update-form').data('updateUrl') + '/' + data.id;
                 $('#productEditModal #update-form').attr('action', formAction);
                 $('#productEditModal').modal({
                     backdrop: 'static',
                     keyboard: false
-                }).on('shown.bs.modal', function() {
-                    // Bind events when modal is shown
-                    $('.modal-edit-btn').off('click').on('click', function() {
-                        $('#update-form').submit();
+                }).on('shown.bs.modal', function () {
+                    $('.modal-edit-btn').off('click').on('click', function () {
+                         e.preventDefault();
+                        let $form = $('#update-form');
+                        if ($form[0].checkValidity() === false) {
+                            e.stopPropagation();
+                            $form.addClass('was-validated');
+                            return;
+                        }
+                        const formData = new FormData($('#update-form')[0]);
+                        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                        $.ajax({
+                            url: $('#update-form').attr('action'),
+                            method: $('#update-form').attr('method'),
+                            processData: false,
+                            contentType: false,
+                            data: formData
+                        }).then(function (response) {
+                            if (response.success) {
+                                showMessage('success', response.message);
+                                $('#productEditModal').modal('hide');
+                                $('#maintable').DataTable().ajax.reload(null);
+                            } else {
+                                showMessage('error', response.message);
+                            }
+                        }).catch(function (xhr, status, error) {
+                            showMessage('error', xhr.responseJSON.message);
+                        });
                     });
-                });;
+                });
 
             }
         })
     });
 
-    $(document).on('click', '.in-app-view', function(e){
+    $(document).on('click', '.in-app-view', function (e) {
         var btn = $(this);
         btn.prop('disabled', true).css('pointer-events', 'none');
         var url = btn.data('url');
         $.ajax({
             url: url,
             type: 'GET',
-            success: function(result){       
-                btn.prop('disabled', false).css('pointer-events', 'auto');        
-                showSuccessMessage('success', result.message)
+            success: function (result) {
+                btn.prop('disabled', false).css('pointer-events', 'auto');
+                showMessage('success', result.message)
             }
         })
-        
+
     });
 
-    $(document).on('click', '.delete-product',function(e) {
+    $(document).on('click', '.delete-product', function (e) {
         e.preventDefault();
         const url = $(this).data('url');
         console.log(url);
-        
+
         const token = $(this).data('csrf');
         const name = $(this).data('name');
-        
+
         Swal.fire({
             title: 'Are you sure?',
             text: `You won't be able to revert this! Product: ${name}`,
@@ -234,7 +277,7 @@ $(document).ready(function () {
                     data: {
                         _token: token
                     },
-                    success: function(response) {
+                    success: function (response) {
                         Swal.fire(
                             'Deleted!',
                             response.message || 'Item has been deleted.',
@@ -243,7 +286,7 @@ $(document).ready(function () {
                             $('#maintable').DataTable().ajax.reload(null);
                         });
                     },
-                    error: function(xhr) {
+                    error: function (xhr) {
                         Swal.fire(
                             'Error!',
                             xhr.responseJSON.message || 'Failed to delete item.',
@@ -253,6 +296,91 @@ $(document).ready(function () {
                 });
             }
         });
+    });
+
+    $('#productCreateModal').on('shown.bs.modal', function (e) {
+        $('.modal-create-btn').off('click').on('click', function (e) {
+            e.preventDefault();
+            let $form = $('#create-form');
+            if ($form[0].checkValidity() === false) {
+                e.stopPropagation();
+                $form.addClass('was-validated');
+                return;
+            }
+            const formData = new FormData($('#create-form')[0]);
+            formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+            $.ajax({
+                url: $('#create-form').attr('action'),
+                method: $('#create-form').attr('method'),
+                processData: false,
+                contentType: false,
+                data: formData
+            }).then(function (response) {
+                if (response.success) {
+                    showMessage('success', response.message);
+                    $('#productCreateModal').modal('hide');
+                    $('#maintable').DataTable().ajax.reload(null);
+                } else {
+                    showMessage('error', response.message);
+                }
+            }).catch(function (xhr, status, error) {
+                showMessage('error', xhr.responseJSON.message);
+            });
+        });
+    });
+
+    $('#productCreateModal').on('hidden.bs.modal', function (e) {
+        $('#create-form')[0].reset();
+        $('#image-preview').empty();
+    });
+
+    $('#productEditModal').on('hidden.bs.modal', function (e) {
+        $('#update-form')[0].reset();
+        $('#edit-image-preview').empty();
+    });
+
+    $('.product-images').on('change', function () {
+        const files = this.files;
+        const $preview = $('#image-preview').empty(); // Clear previous previews
+
+        if (files && files.length > 0) {
+            $.each(files, function (index, file) {
+                if (!file.type.match('image.*')) return; // Skip non-image files
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const $img = $('<img>', {
+                        src: e.target.result,
+                        class: 'img-thumbnail mr-2 mb-2',
+                        style: 'max-width: 100px; max-height: 100px;'
+                    });
+                    $preview.append($img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+
+    $('.edit-product-images').on('change', function () {
+        const files = this.files;
+        const $preview = $('#edit-image-preview').empty(); // Clear previous previews
+
+        if (files && files.length > 0) {
+            $.each(files, function (index, file) {
+                if (!file.type.match('image.*')) return; // Skip non-image files
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const $img = $('<img>', {
+                        src: e.target.result,
+                        class: 'img-thumbnail mr-2 mb-2',
+                        style: 'max-width: 100px; max-height: 100px;'
+                    });
+                    $preview.append($img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
     });
 
     function showLoader($btn) {
@@ -271,7 +399,7 @@ $(document).ready(function () {
         }
     }
 
-    function showSuccessMessage(type, message) {
+    function showMessage(type, message) {
         Swal.fire({
             icon: type,
             title: type === 'success' ? 'Success' : 'Error',

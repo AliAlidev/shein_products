@@ -37,10 +37,10 @@
 
                             <div class="form-row">
                                 <input type="submit" class="button border margin-top-5" name="login" value="Login" />
-                                <div class="checkboxes margin-top-10">
+                                {{-- <div class="checkboxes margin-top-10">
                                     <input id="remember-me" type="checkbox" name="check">
                                     <label for="remember-me">{{ __('Remember Me') }}</label>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </form>

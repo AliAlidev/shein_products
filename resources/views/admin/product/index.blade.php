@@ -66,9 +66,10 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <a href="{{ route('product.create') }}"
-                                        class="btn btn-icon icon-left btn-success export-all-btn" style="height: 35px">
-                                           <i class="fa fa-plus"></i> Create
+                                    <input type="checkbox" class="form-control">
+                                    <a href="#" data-toggle="modal" data-target="#productCreateModal"
+                                        class="btn btn-icon icon-left btn-info export-all-btn" style="height: 35px">
+                                        <i class="fa fa-plus"></i> Create
                                     </a>
                                     <a href="{{ route('products.export') }}"
                                         class="btn btn-icon icon-left btn-success export-all-btn" style="height: 35px">
@@ -208,6 +209,12 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label style="font-weight: bolder; font-size: 14px">Images:</label>
+                            <div id="view-image-preview" class="mt-2"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -227,7 +234,7 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="" method="POST" data-update-url="{{ route('product.edit') }}" id="update-form">
+                <form action="" method="POST" data-update-url="{{ route('product.edit') }}" id="update-form" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" id="product_id" name="product_id">
                     <div class="modal-body">
@@ -235,25 +242,25 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Arabic Name:</label>
-                                    <input type="text" name="ar_name" class="detail-ar-name form-control">
+                                    <input type="text" name="ar_name" class="detail-ar-name form-control" required>
                                 </div>
                                 <div class="form-group">
                                     <label>English Name:</label>
-                                    <input type="text" name="en_name" class="detail-en-name form-control">
+                                    <input type="text" name="en_name" class="detail-en-name form-control" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Price:</label>
-                                    <input type="number" name="price" class="detail-price form-control">
+                                    <input type="number" name="price" class="detail-price form-control" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Arabic Brand:</label>
-                                    <input type="text" name="ar_brand" class="detail-ar-brand form-control">
+                                    <input type="text" name="ar_brand" class="detail-ar-brand form-control" required>
                                 </div>
                                 <div class="form-group">
                                     <label>English Brand:</label>
-                                    <input type="text" name="en_brand" class="detail-en-brand form-control">
+                                    <input type="text" name="en_brand" class="detail-en-brand form-control" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Barcode:</label>
@@ -265,13 +272,13 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Arabic Description:</label>
-                                    <textarea name="ar_description" class="detail-ar-desc form-control h-25" cols="30" rows="5"></textarea>
+                                    <textarea name="ar_description" class="detail-ar-desc form-control h-25" cols="30" rows="5" required></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>English Description:</label>
-                                    <textarea name="en_description" class="detail-en-desc form-control h-25" cols="30" rows="5"></textarea>
+                                    <textarea name="en_description" class="detail-en-desc form-control h-25" cols="30" rows="5" required></textarea>
                                 </div>
                             </div>
                         </div>
@@ -279,7 +286,7 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>Store:</label>
-                                    <input type="text" name="store" class="detail-store form-control">
+                                    <input type="text" name="store" class="detail-store form-control" value="Shein">
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -296,10 +303,119 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Images:</label>
+                                    <input type="file" name="images[]" multiple class="edit-product-images form-control">
+                                </div>
+                                <div id="edit-image-preview" class="mt-2"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary modal-edit-btn" data-dismiss="modal">Update</button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary modal-edit-btn">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal fade" id="productCreateModal" tabindex="-1" role="dialog"
+        aria-labelledby="productDetailsModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productDetailsModalLabel">Product Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('product.create') }}" method="POST" id="create-form"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Name:</label>
+                                    <input type="text" name="ar_name" class="detail-ar-name form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>English Name:</label>
+                                    <input type="text" name="en_name" class="detail-en-name form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Price:</label>
+                                    <input type="number" name="price" class="detail-price form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Brand:</label>
+                                    <input type="text" name="ar_brand" class="detail-ar-brand form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>English Brand:</label>
+                                    <input type="text" name="en_brand" class="detail-en-brand form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Barcode:</label>
+                                    <input type="text" name="barcode" class="detail-barcode form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Arabic Description:</label>
+                                    <textarea name="ar_description" class="detail-ar-desc form-control h-25" cols="30" rows="5" required></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>English Description:</label>
+                                    <textarea name="en_description" class="detail-en-desc form-control h-25" cols="30" rows="5" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Store:</label>
+                                    <input type="text" name="store" class="detail-store form-control"
+                                        value="Shein">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Creation Date:</label>
+                                    <input type="date" name="creation_date" class="detail-creation-date form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>View In App:</label>
+                                    <input type="checkbox" name="view_in_app" class="detail-in-app form-control"
+                                        style="width: 20px">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Images:</label>
+                                    <input type="file" name="images[]" multiple class="product-images form-control">
+                                </div>
+                                <div id="image-preview" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary modal-create-btn">Create</button>
                     </div>
                 </form>
             </div>
@@ -317,5 +433,5 @@
     <script src="{{ asset('assets/modules/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('assets/modules/datatables.net-select-bs4/js/select.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('js/product/index.js') }}"></script>
-    <script src="{{asset('assets/modules/sweetalert/sweetalert2@11.js')}}"></script>
+    <script src="{{ asset('assets/modules/sweetalert/sweetalert2@11.js') }}"></script>
 @endsection
