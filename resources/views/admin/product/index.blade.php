@@ -66,7 +66,6 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <input type="checkbox" class="form-control">
                                     <a href="#" data-toggle="modal" data-target="#productCreateModal"
                                         class="btn btn-icon icon-left btn-info export-all-btn" style="height: 35px">
                                         <i class="fa fa-plus"></i> Create
