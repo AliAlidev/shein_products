@@ -12,15 +12,17 @@ use App\Http\Requests\BankRequest;
 use App\Http\Controllers\BackendController;
 use App\Http\Traits\FileTrait;
 use App\Models\Product;
+use App\Services\RapidapiSheinService;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends BackendController
 {
-
     use FileTrait;
-    public function __construct()
+    private RapidapiSheinService $rapidapiSheinService;
+    public function __construct(RapidapiSheinService $rapidapiSheinService)
     {
+        $this->rapidapiSheinService = $rapidapiSheinService;
         parent::__construct();
     }
 
@@ -69,7 +71,7 @@ class ProductController extends BackendController
 
     function syncProducts()
     {
-        sleep(2);
+        dd($this->rapidapiSheinService->fetchProducts());
         return response()->json([
             'success' => true,
             'message' => 'Products have been synced successfully'

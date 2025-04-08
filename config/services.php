@@ -31,29 +31,8 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'fcm'      => [
-        'key' => env('FCM_SECRET_KEY'),
-    ],
-    'stripe'   => [
-        'key'    => env('STRIPE_KEY'),
-        'secret' => env('STRIPE_SECRET'),
-    ],
-    'razorpay' => [
-        'key'    => env('RAZORPAY_KEY'),
-        'secret' => env('RAZORPAY_SECRET'),
-    ],
-    'setting'  => [
-        'timezone' => env('APP_TIMEZONE'),
-    ],
-    'facebook' => [
-        'client_id' => env('FB_CLIENT_ID'),
-        'client_secret' => env('FB_CLIENT_SECRET'),
-        'redirect' => env('FB_REDIREDT_URL'),
-    ],
-    'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIREDT_URL'),
-    ],
-
+    'rapidapi_shein' => [
+        'host' => env('RAPIDAPI_SHEIN_HOST'),
+        'key' => env('RAPIDAPI_SHEIN_KEY'),
+    ]
 ];

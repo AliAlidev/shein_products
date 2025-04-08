@@ -17,4 +17,8 @@ class Product extends Model
     function primaryImage() {
         return $this->images[0] ?? null;
     }
+
+    function details() {
+        return $this->hasOne(ProductDetail::class, 'product_id');
+    }
 }
