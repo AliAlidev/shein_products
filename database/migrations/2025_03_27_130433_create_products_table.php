@@ -27,6 +27,9 @@ return new class extends Migration
             $table->string('store')->nullable();
             $table->string('barcode')->nullable();
             $table->string('primary_image')->nullable();
+            $table->string('rapidapi_cat_id')->nullable();
+            $table->string('rapidapi_adp')->nullable();
+            $table->string('rapidapi_country')->nullable();
             $table->date('creation_date')->nullable();
             $table->boolean('view_in_app')->default(0);
             $table->json('images')->nullable();

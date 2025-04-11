@@ -14,11 +14,23 @@ class Product extends Model
         'additional_data' => 'array'
     ];
 
-    function primaryImage() {
+    function primaryImage()
+    {
         return $this->images[0] ?? null;
     }
 
-    function details() {
+    function details()
+    {
         return $this->hasOne(ProductDetail::class, 'product_id');
+    }
+
+    function brand()
+    {
+        return $this->hasOne(ProductBrand::class, 'id', 'brand_id');
+    }
+
+    function category()
+    {
+        return $this->hasOne(ProductCategory::class, 'id', 'category_id');
     }
 }

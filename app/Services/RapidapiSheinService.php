@@ -17,15 +17,19 @@ class RapidapiSheinService
 {
     protected $apiHost;
     protected $apiKey;
+    protected $translationService;
 
     const DEFAULT_LANGUAGE = 'en';
     const DEFAULT_COUNTRY = 'US';
     const DEFAULT_CURRENCY = 'USD';
 
-    public function __construct()
+
+
+    public function __construct(ChatGPTTranslationService $translationService)
     {
         $this->apiHost = config('services.rapidapi_shein.host');
         $this->apiKey = config('services.rapidapi_shein.key');
+        $this->translationService = $translationService;
     }
 
     private function request($endpoint, $params = [])
@@ -64,7 +68,7 @@ class RapidapiSheinService
         ]);
     }
 
-    public function getProducts($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $lang = self::DEFAULT_LANGUAGE, $limit = 20, $page = 1, $sort = null)
+    public function getProducts($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $lang = self::DEFAULT_LANGUAGE, $limit = 19, $page = 1, $sort = null)
     {
         return $this->request('products/list', [
             'language' => $lang,
@@ -78,12 +82,88 @@ class RapidapiSheinService
         ]);
     }
 
-    function getProductsParallel($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $lang = self::DEFAULT_LANGUAGE, $limit = 20, $page = 1, $sort = null)
+    public function getProductsWitPagination($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $lang = self::DEFAULT_LANGUAGE, $limit = 19, $sort = null)
+    {
+        $page = 1;
+        $allProducts = [];
+        $totalProducts = null;
+
+        do {
+            $response = $this->request('products/list', [
+                'language' => $lang,
+                'country'  => $country,
+                'cat_id'   => $catId,
+                'currency' => $currency,
+                'adp'      => $adp,
+                'sort'     => $sort,
+                'limit'    => 19,
+                'page'     => $page,
+            ]);
+            if (isset($response['code']) && $response['code'] == 0) {
+                $data = $response['info'];
+                $products = $data['products'];
+                if (count($products) > 0) {
+                    foreach ($products as $key => $product) {
+                        $productModel = Product::updateOrCreate(
+                            [
+                                'external_id' =>  $product['goods_id']
+                            ],
+                            [
+                                'external_id' =>  $product['goods_id'] ?? null,
+                                'en_name' =>  $product['goods_name'] ?? null,
+                                'ar_name' => $product['goods_name'] ? translateToArabic($product['goods_name'], $this->translationService) : null,
+                                'slug' =>  $product['goods_url_name'] ?? null,
+                                'external_sku' =>  $product['goods_sn'] ?? null,
+                                'price' =>  $product['retailPrice']['amount'] ?? 0,
+                                'primary_image' => $product['goods_img'] ?? null,
+                                'currency' =>  self::DEFAULT_CURRENCY,
+                                'en_description' =>  $product['goods_name'] ?? null,
+                                'ar_description' => $product['goods_name'] ? translateToArabic($product['goods_name'], $this->translationService) : null,
+                                'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew']),
+                                'category_id' => $this->checkCategoryAndCreateIfNotExists($product),
+                                'store' => 'Shein',
+                                'creation_date'  => Carbon::now()->format('Y-m-d'),
+                                'images' => $product['detail_image'] ?? [],
+                                'rapidapi_cat_id' => $catId,
+                                'rapidapi_adp' => $adp,
+                                'rapidapi_country' => $country
+                            ]
+                        );
+                        if (!$productModel->details()->exists()) {
+                            $productModel->details()->create([
+                                'product_relation_id' => $product['productRelationID'] ?? null,
+                                'product_material' => $product['productMaterial'] ?? [],
+                                'retail_price' => $product['retailPrice']['amount'] ?? 0,
+                                'sale_price' => $product['salePrice']['amount'] ?? 0,
+                                'discount_price' => $product['discountPrice']['amount'] ?? 0,
+                                'retail_discount_price' => $product['retailDiscountPrice']['amount'] ?? 0,
+                                'unit_discount' => $product['unit_discount'] ?? null,
+                                'srp_discount' => $product['srpDiscount'] ?? null,
+                                'promotion_info' => $product['promotionInfo'] ?? [],
+                                'stock' => $product['stock'] ?? 0,
+                                'sold_out_status' => $product['soldOutStatus'] ?? false,
+                                'is_on_sale' => $product['is_on_sale'] ?? 0,
+                                'related_color_new' => $product['relatedColorNew'] ?? [],
+                                'featureSubscript' => $product['featureSubscript'] ?? []
+                            ]);
+                        }
+                    }
+                }
+                $page++;
+            }
+        } while (count($allProducts) < $totalProducts);
+
+        return $allProducts;
+    }
+
+
+    function getProductsParallel($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $lang = self::DEFAULT_LANGUAGE, $limit = 19, $page = 1, $sort = null)
     {
         $client = new Client();
 
         // Prepare the requests for both English and Arabic languages
-        $languages = ['en', 'ar'];  // Add other languages if needed
+        // $languages = ['en', 'ar'];  // Add other languages if needed
+        $languages = ['en'];  // Add other languages if needed
         $requests = [];
 
         foreach ($languages as $lang) {
@@ -140,57 +220,6 @@ class RapidapiSheinService
         ];
     }
 
-    public function getProductsParallelDeprecated($catId, $adp, $country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY, $limit = 20, $page = 1, $sort = null)
-    {
-        $languages = ['en', 'ar'];
-
-        $responses = Http::pool(
-            fn($pool) =>
-            array_map(
-                fn($lang) =>
-                $pool->withHeaders([
-                    'x-rapidapi-host' => $this->apiHost,
-                    'x-rapidapi-key' => $this->apiKey
-                ])->get("https://unofficial-shein.p.rapidapi.com/products/list", [
-                    'language' => $lang,
-                    'country'  => $lang === 'ar' ? 'AE' : $country,
-                    'cat_id'   => $catId,
-                    'currency' => $currency,
-                    'adp'      => $adp,
-                    'limit'    => $limit,
-                    'page'     => $page,
-                    'sort'     => $sort,
-                ]),
-                $languages
-            )
-        );
-
-        $result = [];
-        $failedRequests = [];
-
-        foreach ($languages as $index => $lang) {
-            if ($responses[$index]->successful()) {
-                $result[$lang] = $responses[$index]->json();
-                if (count($result[$lang]['info']['products']) == 0)
-                    dd($result[$lang]);
-            } else {
-                $failedRequests[$lang] = [
-                    'status'  => $responses[$index]->status(),
-                    'error'   => $responses[$index]->body(),
-                ];
-                Log::error("Failed request for language: {$lang}", [
-                    'status' => $responses[$index]->status(),
-                    'response' => $responses[$index]->body(),
-                ]);
-            }
-        }
-        Log::alert($result);
-        return [
-            'success' => $result,
-            'failed'  => $failedRequests,
-        ];
-    }
-
     public function fetchProducts($country = self::DEFAULT_COUNTRY, $currency = self::DEFAULT_CURRENCY)
     {
         $productsCount = 0;
@@ -219,72 +248,7 @@ class RapidapiSheinService
                                             $nodeCatId = $thumbItem['hrefTarget'];
                                             $adp = $thumbItem['goodsId'];
                                             usleep(200000);
-                                            $products = $this->getProductsParallel($nodeCatId, $adp, $country, $currency);
-                                            $arProducts = $products['success'][0]['data'];
-                                            $enProducts = $products['success'][1]['data'];
-
-                                            if ($enProducts['code'] == 0) {
-                                                if (count($enProducts['info']['products']) > 0) {
-                                                    foreach ($enProducts['info']['products'] as $key => $product) {
-                                                        $productModel = Product::updateOrCreate(
-                                                            [
-                                                                'external_id' =>  $product['goods_id']
-                                                            ],
-                                                            [
-                                                                'external_id' =>  $product['goods_id'] ?? null,
-                                                                'en_name' =>  $product['goods_name'] ?? null,
-                                                                'slug' =>  $product['goods_url_name'] ?? null,
-                                                                'external_sku' =>  $product['goods_sn'] ?? null,
-                                                                'price' =>  $product['retailPrice']['amount'] ?? 0,
-                                                                'primary_image' => $product['goods_img'] ?? null,
-                                                                'currency' =>  self::DEFAULT_CURRENCY,
-                                                                'en_description' =>  $product['goods_name'] ?? null,
-                                                                'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew']),
-                                                                'category_id' => $this->checkCategoryAndCreateIfNotExists($product),
-                                                                'store' => 'Shein',
-                                                                'creation_date'  => Carbon::now()->format('Y-m-d'),
-                                                                'images' => $product['detail_image'] ?? []
-                                                            ]
-                                                        );
-                                                        if (!$productModel->details()->exists()) {
-                                                            $productModel->details()->create([
-                                                                'product_relation_id' => $product['productRelationID'] ?? null,
-                                                                'product_material' => $product['productMaterial'] ?? [],
-                                                                'retail_price' => $product['retailPrice']['amount'] ?? 0,
-                                                                'sale_price' => $product['salePrice']['amount'] ?? 0,
-                                                                'discount_price' => $product['discountPrice']['amount'] ?? 0,
-                                                                'retail_discount_price' => $product['retailDiscountPrice']['amount'] ?? 0,
-                                                                'unit_discount' => $product['unit_discount'] ?? null,
-                                                                'srp_discount' => $product['srpDiscount'] ?? null,
-                                                                'promotion_info' => $product['promotionInfo'] ?? [],
-                                                                'stock' => $product['stock'] ?? 0,
-                                                                'sold_out_status' => $product['soldOutStatus'] ?? false,
-                                                                'is_on_sale' => $product['is_on_sale'] ?? 0,
-                                                                'related_color_new' => $product['relatedColorNew'] ?? [],
-                                                                'featureSubscript' => $product['featureSubscript'] ?? []
-                                                            ]);
-                                                        }
-                                                        $productsCount++;
-                                                        Log::alert($productsCount);
-                                                    }
-                                                }
-                                            }
-
-                                            if ($arProducts['code'] == 0) {
-                                                foreach ($arProducts['info']['products'] as $key => $product) {
-                                                    Product::updateOrCreate(
-                                                        [
-                                                            'external_id' =>  $product['goods_id']
-                                                        ],
-                                                        [
-                                                            'ar_name' =>  $product['goods_name'] ?? null,
-                                                            'ar_description' =>  $product['goods_name'] ?? null,
-                                                            'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew'], 'ar'),
-                                                            'category_id' => $this->checkCategoryAndCreateIfNotExists($product, 'ar')
-                                                        ]
-                                                    );
-                                                }
-                                            }
+                                            $products = $this->getProductsWitPagination($nodeCatId, $adp, $country, $currency);
                                         }
                                     }
                                 }
@@ -297,7 +261,7 @@ class RapidapiSheinService
         dd("done");
     }
 
-    function checkBrandAndCreateIfNotExists($brandObject, $lang = 'en')
+    function checkBrandAndCreateIfNotExists($brandObject)
     {
         $logos = [];
         if (isset($brandObject['series_logo_url_left']))
@@ -308,10 +272,12 @@ class RapidapiSheinService
         if (isset($brandObject['brandId'])) {
             $brand = ProductBrand::updateOrCreate(['external_id' => $brandObject['brandId']], [
                 'external_id' => $brandObject['brandId'] ?? null,
-                'brand_name_' . $lang => $brandObject['brandName'] ?? null,
-                'brand_badge_name_' . $lang => $brandObject['brand_badge_name'] ?? null,
+                'brand_name_en' => $brandObject['brandName'] ?? null,
+                'brand_name_ar' => $brandObject['brandName'] ? translateToArabic($brandObject['brandName'], $this->translationService) : null,
+                'brand_badge_name_en' => $brandObject['brand_badge_name'] ?? null,
+                'brand_badge_name_ar' => $brandObject['brand_badge_name'] ? translateToArabic($brandObject['brand_badge_name'], $this->translationService) : null,
                 'brand_code' => $brandObject['brand_code'] ?? null,
-                'series_badge_name_' . $lang => $brandObject['series_badge_name'] ?? null,
+                'series_badge_name_en' => $brandObject['series_badge_name'] ?? null,
                 'series_id' => $brandObject['seriesId'] ?? null,
                 'series_logo' => $logos ?? []
             ]);
@@ -320,13 +286,14 @@ class RapidapiSheinService
         return null;
     }
 
-    function checkCategoryAndCreateIfNotExists($productObject, $lang = 'en')
+    function checkCategoryAndCreateIfNotExists($productObject)
     {
         $category = ProductCategory::updateOrCreate([
             'external_id' => $productObject['cat_id']
         ], [
             'external_id' => $productObject['cat_id'],
-            'name_' . $lang => $productObject['cate_name']
+            'name_en' => $productObject['cate_name'],
+            'name_ar' => translateToArabic($productObject['cate_name'], $this->translationService)
         ]);
         return $category->id;
     }

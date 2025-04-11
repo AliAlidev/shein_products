@@ -34,5 +34,10 @@ return [
     'rapidapi_shein' => [
         'host' => env('RAPIDAPI_SHEIN_HOST'),
         'key' => env('RAPIDAPI_SHEIN_KEY'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_KEY'),
+        'want_translation' => env('OPENAI_WANT_TRANSLATION', false)
     ]
 ];

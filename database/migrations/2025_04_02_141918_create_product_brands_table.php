@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('product_brands', function (Blueprint $table) {
             $table->id();
             $table->string('brand_name_en'); // premiumFlagNew > brandName
-            $table->string('brand_name_ar'); // premiumFlagNew > brandName
+            $table->string('brand_name_ar')->nullable(); // premiumFlagNew > brandName
             $table->string('external_id'); // premiumFlagNew > brandId
             $table->string('brand_badge_name_en')->nullable(); // premiumFlagNew > brand_badge_name
             $table->string('brand_badge_name_ar')->nullable(); // premiumFlagNew > brand_badge_name

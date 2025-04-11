@@ -43,6 +43,12 @@ class ProductController extends BackendController
                     return '<input class="form-control in-app-view" style="width:20px" type="checkbox" data-url="' . route("product.view_on_app_status", $product->id) . '"
                                 data-product-id="' . $product->id . '" ' . $checked . '>';
                 })
+                ->addColumn('ar_brand', function ($product) {
+                    return $product->brand?->brand_name_ar??null;
+                })
+                ->addColumn('en_brand', function ($product) {
+                    return $product->brand?->brand_name_en??null;
+                })
                 ->addColumn('action', function ($product) {
                     $retAction = '';
                     $retAction .= '<a href="#" class="btn btn-sm btn-icon float-left btn-primary edit-product" data-url="' . route('product.details', $product->id) . '" data-edit-url="' . route('product.edit', $product->id) . '" data-toggle="tooltip" data-placement="top" title="Edit" ><i class="far fa-edit"></i></a>';
