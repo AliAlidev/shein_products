@@ -8,13 +8,20 @@ $(document).ready(function () {
             serverSide: true,
             pageLength: 10,
             ajax: {
-                url: $('#maintable').attr('data-url')
+                url: $('#maintable').attr('data-url'),
+                data: function (d) {
+                    d.category_ids = $('#category_id').val();
+                    d.section_types = $('#section_types').val();
+                    d.sections = $('#sections').val();
+                }
             },
             columns: [
                 { data: 'id', name: 'id', width: '50px' },
                 { data: 'main_image', name: 'main_image', orderable: false, searchable: false, visible: false },
                 { data: 'ar_name', name: 'ar_name', visible: false },
                 { data: 'en_name', name: 'en_name' },
+                { data: 'category_ar', name: 'category_ar' },
+                { data: 'category_en', name: 'category_en' },
                 { data: 'price', name: 'price' },
                 { data: 'ar_brand', name: 'ar_brand', orderable: false, visible: false },
                 { data: 'en_brand', name: 'en_brand', orderable: false },
@@ -46,18 +53,24 @@ $(document).ready(function () {
             var column = table.column($(this).data('column'));
             column.visible(!column.visible());
         });
+        $('#category_id, #sections, #section_types').change(function () {
+            table.ajax.reload();
+        });
     }
 
     $('.export-current-btn').on('click', function (event) {
         event.preventDefault();
         var $btn = $(this);
-        showLoader($btn)
+        showLoader($btn);
         const table = $('#maintable').DataTable();
         const info = table.page.info();
         const params = {
             page: info.page + 1,
             per_page: info.length,
             search: table.search(),
+            category_ids: $('#category_id').val(),
+            section_types: $('#section_types').val(),
+            sections: $('#sections').val(),
             _token: '{{ csrf_token() }}'
         };
 
@@ -82,12 +95,21 @@ $(document).ready(function () {
     $('.export-all-btn').on('click', function (e) {
         if ($(this).attr('href').includes('export')) {
             e.preventDefault();
+            const table = $('#maintable').DataTable();
             var $btn = $(this);
             showLoader($btn);
+            const params = {
+                search: table.search(),
+                category_ids: $('#category_id').val(),
+                section_types: $('#section_types').val(),
+                sections: $('#sections').val(),
+                _token: '{{ csrf_token() }}'
+            };
 
             $.ajax({
                 url: $btn.attr('href'),
-                method: 'GET',
+                method: 'POST',
+                data: params,
                 success: function (data) {
                     if (data.download_url) {
                         showMessage('success', data.message);
@@ -146,7 +168,7 @@ $(document).ready(function () {
                 $('#productDetailsModal .detail-creation-date').text(data.creation_date);
                 $('#productDetailsModal .detail-in-app').text(data.view_in_app ? 'Yes' : 'No');
                 $('#productDetailsModal #view-image-preview').empty();
-                if(data.images){
+                if (data.images) {
                     data.images.forEach(image => {
                         const $img = $('<img>', {
                             src: image,
@@ -184,7 +206,7 @@ $(document).ready(function () {
                 $('#productEditModal .detail-creation-date').val(data.creation_date);
                 $('#productEditModal #product_id').val(data.id);
                 $('#productEditModal #edit-image-preview').empty();
-                if(data.images){
+                if (data.images) {
                     data.images.forEach(image => {
                         const $img = $('<img>', {
                             src: image,
@@ -203,7 +225,7 @@ $(document).ready(function () {
                     keyboard: false
                 }).on('shown.bs.modal', function () {
                     $('.modal-edit-btn').off('click').on('click', function () {
-                         e.preventDefault();
+                        e.preventDefault();
                         let $form = $('#update-form');
                         if ($form[0].checkValidity() === false) {
                             e.stopPropagation();
@@ -410,4 +432,8 @@ $(document).ready(function () {
             timer: 3000
         });
     }
+
+    // Initialize Select2
+    $('.select2').select2();
+
 });

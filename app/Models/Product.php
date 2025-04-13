@@ -11,12 +11,13 @@ class Product extends Model
     protected $guarded = [];
     protected $casts = [
         'images' => 'array',
-        'additional_data' => 'array'
+        'additional_data' => 'array',
+        'parent_categories' => 'array'
     ];
 
     function primaryImage()
     {
-        return $this->images[0] ?? null;
+        return $this->primary_image ?? $this->images[0] ?? null;
     }
 
     function details()
@@ -31,6 +32,11 @@ class Product extends Model
 
     function category()
     {
-        return $this->hasOne(ProductCategory::class, 'id', 'category_id');
+        return $this->hasOne(ProductCategory::class, 'external_id', 'category_id');
+    }
+
+    function node()
+    {
+        return $this->hasOne(SheinNode::class, 'id', 'node_id');
     }
 }

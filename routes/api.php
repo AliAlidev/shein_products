@@ -1,4 +1,7 @@
 <?php
+
+use App\Http\Controllers\Admin\ApiProductController;
+use App\Http\Controllers\Admin\Auth\ApiLoginController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,5 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['prefix' => 'v1'], function () {
-
+    Route::post('login', [ApiLoginController::class, 'login']);
+    Route::middleware('auth:api')->get('get-products', [ApiProductController::class, 'list']);
+    Route::middleware('auth:api')->get('get-categories', [ApiProductController::class, 'categories']);
 });

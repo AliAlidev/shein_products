@@ -1,5 +1,5 @@
 <!-- General JS Scripts -->
-<script src="{{ asset('assets/modules/jquery/dist/jquery.min.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="{{ asset('assets/modules/popper.js/dist/popper.min.js') }}"></script>
 <script src="{{ asset('assets/modules/bootstrap/dist/js/bootstrap.min.js') }}"></script>
 <script src="{{ asset('assets/modules/jquery.nicescroll/dist/jquery.nicescroll.min.js') }}"></script>
@@ -13,4 +13,3 @@
 
 <!-- Template JS File -->
 <script src="{{ asset('assets/js/scripts.js') }}"></script>
-

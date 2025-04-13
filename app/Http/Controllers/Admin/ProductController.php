@@ -12,15 +12,19 @@ use App\Http\Requests\BankRequest;
 use App\Http\Controllers\BackendController;
 use App\Http\Traits\FileTrait;
 use App\Models\Product;
-use App\Services\RapidapiSheinService;
+use App\Models\ProductCategory;
+use App\Models\SheinNode;
+use App\Services\ChatGPTTranslationService;
+use App\Services\RapidapiSheinNewService;
+// use App\Services\RapidapiSheinService;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends BackendController
 {
     use FileTrait;
-    private RapidapiSheinService $rapidapiSheinService;
-    public function __construct(RapidapiSheinService $rapidapiSheinService)
+    private RapidapiSheinNewService $rapidapiSheinService;
+    public function __construct(RapidapiSheinNewService $rapidapiSheinService)
     {
         $this->rapidapiSheinService = $rapidapiSheinService;
         parent::__construct();
@@ -28,8 +32,14 @@ class ProductController extends BackendController
 
     public function index(Request $request)
     {
-        $products = Product::orderBy('created_at', 'desc')->get();
+        // app(ChatGPTTranslationService::class)->translateBulkRecords();
+        // dd("done");
+        $sections = SheinNode::select('channel')->distinct('channel')->pluck('channel')->toArray();
+        $sectionTypes = SheinNode::select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
+        $categories = ProductCategory::pluck('name_en', 'external_id')->toArray();
+
         if ($request->ajax()) {
+            $products = $this->getFilteredProducts($request);
             return DataTables::of($products)
                 ->addColumn('main_image', function ($product) {
                     $image = $product->images[0] ?? null;
@@ -38,16 +48,25 @@ class ProductController extends BackendController
                 ->addColumn('brand', function ($product) {
                     return $product->brand;
                 })
+                ->addColumn('category_en', function ($product) {
+                    return $product->category->name_en;
+                })
+                ->editColumn('price', function ($product) {
+                    return $product->price . ' ' . ($product->currency == 'USD' ? '$' : $product->currency);
+                })
+                ->addColumn('category_ar', function ($product) {
+                    return $product->category->name_ar;
+                })
                 ->addColumn('in_app_view', function ($product) {
                     $checked = $product->view_in_app ? 'checked' : '';
                     return '<input class="form-control in-app-view" style="width:20px" type="checkbox" data-url="' . route("product.view_on_app_status", $product->id) . '"
                                 data-product-id="' . $product->id . '" ' . $checked . '>';
                 })
                 ->addColumn('ar_brand', function ($product) {
-                    return $product->brand?->brand_name_ar??null;
+                    return $product->brand?->brand_name_ar ?? null;
                 })
                 ->addColumn('en_brand', function ($product) {
-                    return $product->brand?->brand_name_en??null;
+                    return $product->brand?->brand_name_en ?? null;
                 })
                 ->addColumn('action', function ($product) {
                     $retAction = '';
@@ -59,13 +78,13 @@ class ProductController extends BackendController
                 ->rawColumns(['main_image', 'in_app_view', 'action'])
                 ->make(true);
         }
-        return view('admin.product.index', $this->data);
+        return view('admin.product.index', ['categories' => $categories, 'sections' => $sections, 'sectionTypes' => $sectionTypes]);
     }
 
     public function export(Request $request)
     {
         $filename = 'exports/products-export-' . now()->format('Y-m-d-H-i-s') . '-' . uniqid() . '.xlsx';
-        Excel::store(new ProductsExport, $filename, 'public');
+        Excel::store(new ProductsExport($this->getFilteredProducts($request)->get()), $filename, 'public');
         $url = Storage::disk('public')->url($filename);
         return response()->json([
             'success' => true,
@@ -77,11 +96,34 @@ class ProductController extends BackendController
 
     function syncProducts()
     {
-        dd($this->rapidapiSheinService->fetchProducts());
-        return response()->json([
-            'success' => true,
-            'message' => 'Products have been synced successfully'
-        ]);
+        // SheinNode::get()->map(function ($node) {
+        //     $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id);
+        //     dd("done");
+        //  });
+        // if ($response['success'])
+        //     return response()->json([
+        //         'success' => true,
+        //         'message' => 'Products have been synced successfully'
+        //     ]);
+        // else
+        //     return response()->json([
+        //         'success' => true,
+        //         'message' => $response['message']
+        //     ]);
+    }
+
+    function syncProductsCommand()
+    {
+        // $response = $this->rapidapiSheinService->fetchAndStoreNodes();
+        // dd("all nodes fetched");
+        // SheinNode::get()->map(function ($node) {
+        //    $products = $this->rapidapiSheinService->getProducts($node->href_target, $node->goods_id, 1);
+        //    dd($products);
+        // });
+        SheinNode::get()->map(function ($node) {
+            $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);
+        });
+        return 1;
     }
 
     function changeViewProductOnAppStatus($id)
@@ -97,7 +139,7 @@ class ProductController extends BackendController
 
     public function exportCurrentPage(Request $request)
     {
-        $query = Product::orderBy('created_at', 'desc');
+        $query = $this->getFilteredProducts($request);
         if ($request->has('search') && !empty($request->search)) {
             $query->where(function ($q) use ($request) {
                 $q->where('en_name', 'like', '%' . $request->search . '%')
@@ -128,6 +170,24 @@ class ProductController extends BackendController
             'filename' => basename($filename),
             'message' => 'Export generated successfully'
         ]);
+    }
+
+    function getFilteredProducts($request)
+    {
+        $categoryIds = $request->category_ids;
+        $sectionTypesFilter = $request->section_types;
+        $sectionsFilter = $request->sections;
+        return Product::when(isset($categoryIds) && count($categoryIds) > 0, function ($qrt) use ($categoryIds) {
+            $qrt->whereIn('category_id', $categoryIds);
+        })->when($sectionTypesFilter, function ($product) use ($sectionTypesFilter) {
+            $product->whereHas('node', function ($node) use ($sectionTypesFilter) {
+                $node->whereIn('root_name', $sectionTypesFilter);
+            });
+        })->when($sectionsFilter, function ($product) use ($sectionsFilter) {
+            $product->whereHas('node', function ($node) use ($sectionsFilter) {
+                $node->whereIn('channel', $sectionsFilter);
+            });
+        })->orderBy('created_at', 'desc');
     }
 
     function getProductDetails($id)

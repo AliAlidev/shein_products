@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Auth;
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
@@ -55,15 +55,16 @@ class LoginController extends Controller
     {
         $this->validateLogin($request);
 
-        if (method_exists($this, 'hasTooManyLoginAttempts') &&
-            $this->hasTooManyLoginAttempts($request)) {
+        if (
+            method_exists($this, 'hasTooManyLoginAttempts') &&
+            $this->hasTooManyLoginAttempts($request)
+        ) {
             $this->fireLockoutEvent($request);
 
             return $this->sendLockoutResponse($request);
         }
 
-        if (Auth::attempt(['email' => $request->get('email'), 'password' => $request->get('password'), 'roles' => UserRole::ADMIN]))
-        {
+        if (Auth::attempt(['email' => $request->get('email'), 'password' => $request->get('password'), 'is_admin' => 0])) {
             return $this->sendLoginResponse($request);
         }
 

@@ -2,12 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\Product;
+use Exception;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ChatGPTTranslationService
 {
     protected $client;
     protected $apiKey;
+
+    // Configuration
+    const BATCH_SIZE = 50; // Number of texts to translate per API call (adjust based on token limits)
+    const MAX_TOKENS_PER_BATCH = 6000; // Stay well below model's max token limit
+    const DELAY_BETWEEN_BATCHES = 1; // Seconds to wait between batches to avoid rate limiting
+    const API_TIMEOUT = 60; // Increased timeout to 60 seconds
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 5; // Seconds between retries
 
     public function __construct()
     {
@@ -17,23 +29,179 @@ class ChatGPTTranslationService
 
     public function translateToArabic($text)
     {
-        $response = $this->client->post('https://api.openai.com/v1/completions', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ],
-            'json' => [
-                'model' => 'gpt-3.5-turbo',  // You can use any GPT model
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are a helpful assistant that translates text to Arabic.'],
-                    ['role' => 'user', 'content' => "Translate the following text to Arabic: '$text'"]
+        try {
+            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type' => 'application/json',
                 ],
-                'temperature' => 0.7,
-                'max_tokens' => 1000,
-            ]
-        ]);
+                'json' => [
+                    'model' => 'gpt-4', // Use GPT-4 for better translation quality
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'You are a professional translator with native proficiency in English and Arabic. ' .
+                                'Follow these rules for translation:' . PHP_EOL .
+                                '- Preserve the exact meaning and context' . PHP_EOL .
+                                '- Use natural, fluent Arabic appropriate for the context' . PHP_EOL .
+                                '- Maintain technical terms when needed' . PHP_EOL .
+                                '- Keep the same tone (formal, informal, etc.) as the original' . PHP_EOL .
+                                '- For ambiguous terms, choose the most common Arabic equivalent'
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => "Translate the following text to Modern Standard Arabic while preserving all nuances:\n\n" .
+                                "Original text: \"$text\"\n\n" .
+                                "Provide only the Arabic translation without additional commentary or explanations."
+                        ]
+                    ],
+                    'temperature' => 0.3, // Lower temperature for more deterministic output
+                    'top_p' => 0.9,
+                    'max_tokens' => 2000, // Increased token limit for longer texts
+                    'frequency_penalty' => 0.2, // Slightly reduce repetition
+                    'presence_penalty' => 0.1
+                ],
+                'timeout' => 30 // Increased timeout for longer texts
+            ]);
 
-        $body = json_decode($response->getBody()->getContents(), true);
-        return $body['choices'][0]['message']['content'] ?? 'Translation failed.';
+            try {
+                $body = json_decode($response->getBody()->getContents(), true);
+
+                if (!isset($body['choices'][0]['message']['content'])) {
+                    throw new Exception('No translation content in API response');
+                }
+
+                $translation = trim($body['choices'][0]['message']['content']);
+
+                // Remove any quotation marks that might have been added
+                $translation = preg_replace('/^["\']+|["\']+$/u', '', $translation);
+
+                return $translation ?: 'Translation failed. No output generated.';
+            } catch (Exception $e) {
+                // Log error here if needed
+                return 'Translation failed. Error: ' . $e->getMessage();
+            }
+        } catch (\Throwable $th) {
+            dd($th->getMessage());
+        }
+    }
+
+
+    public function translateBulkRecords()
+    {
+        // 1. Fetch untranslated records
+        $records = DB::table('products')
+            ->whereNull('ar_name') // Or whatever condition marks untranslated records
+            ->select('id', 'en_name') // Include primary key and text to translate
+            ->limit(5000)
+            ->get();
+
+        // 2. Process in batches
+        $totalRecords = count($records);
+        $processed = 0;
+
+        foreach (array_chunk($records->toArray(), self::BATCH_SIZE) as $batch) {
+            try {
+                // 3. Prepare batch translation request
+                $englishTexts = array_column($batch, 'en_name');
+                $translationResults = $this->translateBatch($englishTexts);
+                dd($translationResults,4);
+
+                // 4. Update records with translations
+                $this->updateTranslations($batch, $translationResults);
+
+                $processed += count($batch);
+                Log::info("Processed $processed/$totalRecords records");
+
+                sleep(self::DELAY_BETWEEN_BATCHES); // Be gentle with the API
+            } catch (\Exception $e) {
+                dd($e->getMessage());
+                Log::error("Batch failed: " . $e->getMessage());
+                continue;
+            }
+        }
+
+        return "Completed. Translated $processed records.";
+    }
+
+    protected function translateBatch(array $texts)
+    {
+        $attempt = 0;
+        $lastError = null;
+
+        while ($attempt < self::MAX_RETRIES) {
+            try {
+                $messages = [
+                    [
+                        'role' => 'system',
+                        'content' => "Return ONLY a JSON array of Arabic translations in the same order as these English texts:\n" .
+                            json_encode($texts, JSON_UNESCAPED_UNICODE) .
+                            "\n\nFormat: [\"translation1\", \"translation2\", ...]"
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => "Translate these to Arabic:"
+                    ]
+                ];
+
+                $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => [
+                        'model' => 'gpt-3.5-turbo', // More reliable than GPT-4 for batch processing
+                        'messages' => $messages,
+                        'temperature' => 0.3,
+                        'max_tokens' => 2000, // Conservative limit
+                    ],
+                    'timeout' => self::API_TIMEOUT
+                ]);
+
+                $body = json_decode($response->getBody()->getContents(), true);
+                $responseContent = $body['choices'][0]['message']['content'] ?? '';
+
+                // Extract JSON array from response
+                if (preg_match('/\[.*\]/s', $responseContent, $matches)) {
+                    $translations = json_decode($matches[0], true);
+                    if (is_array($translations) && count($translations) === count($texts)) {
+                        return $translations;
+                    }
+                }
+
+                throw new \Exception("Invalid response format: " . substr($responseContent, 0, 100));
+            } catch (\Exception $e) {
+                $lastError = $e;
+                $attempt++;
+                sleep(self::RETRY_DELAY * $attempt); // Exponential backoff
+            }
+        }
+
+        throw new \Exception("Failed after " . self::MAX_RETRIES . " attempts. Last error: " . $lastError->getMessage());
+    }
+
+    protected function updateTranslations(array $batch, array $translations)
+    {
+        $updates = [];
+
+        foreach ($batch as $index => $record) {
+            if (!empty($translations[$index])) {
+                $updates[] = [
+                    'id' => $record['id'],
+                    'ar_name' => $translations[$index]
+                ];
+            }
+        }
+
+        // Batch update using a single query
+        DB::transaction(function () use ($updates) {
+            foreach ($updates as $update) {
+                DB::table('products')
+                    ->where('id', $update['id'])
+                    ->update([
+                        'ar_name' => $update['ar_name']
+                    ]);
+            }
+        });
     }
 }

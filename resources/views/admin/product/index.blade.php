@@ -1,46 +1,5 @@
 @extends('admin.layouts.master')
 
-@push('css')
-    <style>
-        .export-btn {
-            position: relative;
-        }
-
-        .export-loader {
-            display: none;
-        }
-
-        .export-btn.loading .export-content {
-            visibility: hidden;
-        }
-
-        .export-btn.loading .export-loader {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Add to your CSS file */
-        .modal-body .form-group {
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            border-bottom: 1px solid #eee;
-        }
-
-        .modal-body .form-control-plaintext {
-            padding: 0.375rem 0;
-            font-weight: 500;
-        }
-
-        .modal-body label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.25rem;
-            display: block;
-        }
-    </style>
-@endpush
-
 @section('main-content')
     <section class="section">
         <div class="section-header">
@@ -52,6 +11,32 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
+                            <div class="row mb-3" style="display: flex; gap: 10px; flex-wrap: nowrap">
+                                <div class="col-md-4">
+                                    <label for="category_id" class="form-label">Sections Filter</label>
+                                    <select class="select2 form-select w-50" multiple id="sections">
+                                        @foreach ($sections as $section)
+                                            <option value="{{ $section }}">{{ $section }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="category_id" class="form-label">Section Types Filter</label>
+                                    <select class="select2 form-select w-50" multiple id="section_types">
+                                        @foreach ($sectionTypes as $section)
+                                            <option value="{{ $section }}">{{ $section }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="category_id" class="form-label">Categories Filter</label>
+                                    <select class="select2 form-select w-50" multiple id="category_id">
+                                        @foreach ($categories as $key => $item)
+                                            <option value="{{ $key }}">{{ $item }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
                             <div style="display: flex; justify-content: space-between">
                                 <div class="dropdown mb-3">
                                     <button class="btn btn-secondary dropdown-toggle" type="button"
@@ -90,7 +75,7 @@
                                             Exporting...
                                         </span>
                                     </a>
-                                    <a href="{{ route('products.sync') }}"
+                                    {{-- <a href="{{ route('products.sync') }}"
                                         class="btn btn-icon icon-left btn-primary sync-products-btn" style="height: 35px">
                                         <span class="export-content">
                                             <i class="fas fa-sync"></i> Sync Products
@@ -98,19 +83,21 @@
                                         <span class="export-loader d-none">
                                             <span class="spinner-border spinner-border-sm" role="status"></span>
                                             Syncing...
-                                        </span></a>
+                                        </span></a> --}}
                                 </div>
                             </div>
 
-                            <div style="width: 100%!important; overflow-x: auto;">
+                            <div style="overflow-x: auto;">
                                 <table class="table table-striped" id="maintable" data-url="{{ route('products') }}"
-                                    style="width: auto!important; min-width: 100%;">
+                                    style="width: 200%!important;">
                                     <thead>
                                         <tr>
                                             <th>ID</th>
                                             <th>Image</th>
                                             <th>Arabic Name</th>
                                             <th>English Name</th>
+                                            <th>Arabic Category</th>
+                                            <th>English Category</th>
                                             <th>Price</th>
                                             <th>Arabic Brand</th>
                                             <th>English Brand</th>
@@ -233,7 +220,8 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form action="" method="POST" data-update-url="{{ route('product.edit') }}" id="update-form" enctype="multipart/form-data">
+                <form action="" method="POST" data-update-url="{{ route('product.edit') }}" id="update-form"
+                    enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" id="product_id" name="product_id">
                     <div class="modal-body">
@@ -285,7 +273,8 @@
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label>Store:</label>
-                                    <input type="text" name="store" class="detail-store form-control" value="Shein">
+                                    <input type="text" name="store" class="detail-store form-control"
+                                        value="Shein">
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -306,7 +295,8 @@
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label>Images:</label>
-                                    <input type="file" name="images[]" multiple class="edit-product-images form-control">
+                                    <input type="file" name="images[]" multiple
+                                        class="edit-product-images form-control">
                                 </div>
                                 <div id="edit-image-preview" class="mt-2"></div>
                             </div>
@@ -423,6 +413,42 @@
 @endsection
 
 @section('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+
+    <style>
+        .export-btn {
+            position: relative;
+        }
+
+        .export-btn.loading .export-content {
+            visibility: hidden;
+        }
+
+        .export-btn.loading .export-loader {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Add to your CSS file */
+        .modal-body .form-group {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-body .form-control-plaintext {
+            padding: 0.375rem 0;
+            font-weight: 500;
+        }
+
+        .modal-body label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+    </style>
     <link rel="stylesheet" href="{{ asset('assets/modules/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/modules/datatables.net-select-bs4/css/select.bootstrap4.min.css') }}">
 @endsection
@@ -433,4 +459,5 @@
     <script src="{{ asset('assets/modules/datatables.net-select-bs4/js/select.bootstrap4.min.js') }}"></script>
     <script src="{{ asset('js/product/index.js') }}"></script>
     <script src="{{ asset('assets/modules/sweetalert/sweetalert2@11.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 @endsection

@@ -13,6 +13,7 @@ class ProductDetail extends Model
         'product_material' => 'array',
         'promotion_info' => 'array',
         'related_color_new' => 'array',
-        'featureSubscript' => 'array'
+        'feature_subscript' => 'array',
+        'coupon_prices' => 'array'
     ];
 }

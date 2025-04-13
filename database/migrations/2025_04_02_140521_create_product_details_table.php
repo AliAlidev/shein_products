@@ -37,7 +37,8 @@ return new class extends Migration
             // Variants
             $table->json('related_color_new')->nullable(); // Stores array of color variant images
 
-            $table->json('featureSubscript')->nullable(); // Stores array of feature labels
+            $table->json('feature_subscript')->nullable(); // Stores array of feature labels
+            $table->json('coupon_prices')->nullable(); // Stores array of feature labels
             $table->timestamps();
         });
     }

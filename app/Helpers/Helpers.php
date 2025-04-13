@@ -30,3 +30,16 @@ if (!function_exists('googleFreeTranslation')) {
         return $tr->translate($text);
     }
 }
+
+if (!function_exists('getCurrentLanguage')) {
+    function getCurrentLanguage()
+    {
+        if (request()->hasHeader('lang')) {
+            $lang = request()->header('lang');
+            $lang = str_replace(' ', '', $lang);
+            in_array($lang, ['ar', 'en']) ?: $lang = 'en';
+            return $lang;
+        } else
+            return 'en';
+    }
+}

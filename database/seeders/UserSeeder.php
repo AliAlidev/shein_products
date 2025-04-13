@@ -25,5 +25,14 @@ class UserSeeder extends Seeder
             'is_admin' => 1,
             'email_verified_at' => now()
         ]);
+        User::firstOrCreate(['email' => 'test_api@example.com'],[
+            'name' => 'test_api',
+            'email' => 'test_api@example.com',
+            'password' => Hash::make('12345678'),
+            'number' => '1234567891',
+            'address' => 'address',
+            'is_admin' => 0,
+            'email_verified_at' => now()
+        ]);
     }
 }
