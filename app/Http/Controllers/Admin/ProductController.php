@@ -16,7 +16,6 @@ use App\Models\ProductCategory;
 use App\Models\SheinNode;
 use App\Services\ChatGPTTranslationService;
 use App\Services\RapidapiSheinNewService;
-// use App\Services\RapidapiSheinService;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -43,7 +42,9 @@ class ProductController extends BackendController
             return DataTables::of($products)
                 ->addColumn('main_image', function ($product) {
                     $image = $product->images[0] ?? null;
-                    return '<img src="' . $image . '" alt="' . $product->name . '" style="width: 50px; height: 50px; object-fit: cover;">';
+                    return '<a data-fancybox="gallery-' . $product->id . '" href="' . $image . '">
+                                <img src="' . $image . '" style="width: 50px; height: 50px; object-fit: cover;" />
+                            </a>';
                 })
                 ->addColumn('brand', function ($product) {
                     return $product->brand;
@@ -94,33 +95,35 @@ class ProductController extends BackendController
         ]);
     }
 
-    function syncProducts()
+    // function syncProducts()
+    // {
+    //     // SheinNode::get()->map(function ($node) {
+    //     //     $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id);
+    //     //     dd("done");
+    //     //  });
+    //     // if ($response['success'])
+    //     //     return response()->json([
+    //     //         'success' => true,
+    //     //         'message' => 'Products have been synced successfully'
+    //     //     ]);
+    //     // else
+    //     //     return response()->json([
+    //     //         'success' => true,
+    //     //         'message' => $response['message']
+    //     //     ]);
+    // }
+
+    function syncNodesCommand($includedTabs = [])
     {
-        // SheinNode::get()->map(function ($node) {
-        //     $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id);
-        //     dd("done");
-        //  });
-        // if ($response['success'])
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => 'Products have been synced successfully'
-        //     ]);
-        // else
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => $response['message']
-        //     ]);
+        $this->rapidapiSheinService->fetchAndStoreNodes($includedTabs);
+        return 1;
     }
 
-    function syncProductsCommand()
+    function syncProductsCommand($channel = null)
     {
-        // $response = $this->rapidapiSheinService->fetchAndStoreNodes();
-        // dd("all nodes fetched");
-        // SheinNode::get()->map(function ($node) {
-        //    $products = $this->rapidapiSheinService->getProducts($node->href_target, $node->goods_id, 1);
-        //    dd($products);
-        // });
-        SheinNode::get()->map(function ($node) {
+        SheinNode::when($channel, function ($q) use ($channel) {
+            $q->where('channel', $channel);
+        })->get()->map(function ($node) {
             $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);
         });
         return 1;
@@ -256,6 +259,19 @@ class ProductController extends BackendController
         return response()->json([
             'success' => true,
             'message' => 'Product created successfully'
+        ]);
+    }
+
+    function getSectionTypes($channel = null)
+    {
+        // $lang = getCurrentLanguage();
+        $sectionTypes = SheinNode::when($channel, function ($query) use ($channel) {
+            $query->where('channel', $channel);
+        })->select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => $sectionTypes
         ]);
     }
 }

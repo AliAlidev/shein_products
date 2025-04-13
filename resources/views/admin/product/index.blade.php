@@ -3,7 +3,7 @@
 @section('main-content')
     <section class="section">
         <div class="section-header">
-            <h1>Shein Store Products</h1>
+            <h1>Products</h1>
         </div>
 
         <div class="section-body">
@@ -14,7 +14,7 @@
                             <div class="row mb-3" style="display: flex; gap: 10px; flex-wrap: nowrap">
                                 <div class="col-md-4">
                                     <label for="category_id" class="form-label">Sections Filter</label>
-                                    <select class="select2 form-select w-50" multiple id="sections">
+                                    <select class="select2 form-select w-50" multiple id="sections" data-section-types-url="{{ route('products.get_section_types') }}">
                                         @foreach ($sections as $section)
                                             <option value="{{ $section }}">{{ $section }}</option>
                                         @endforeach
@@ -89,7 +89,7 @@
 
                             <div style="overflow-x: auto;">
                                 <table class="table table-striped" id="maintable" data-url="{{ route('products') }}"
-                                    style="width: 200%!important;">
+                                    style="width: 150%!important;">
                                     <thead>
                                         <tr>
                                             <th>ID</th>
@@ -451,6 +451,7 @@
     </style>
     <link rel="stylesheet" href="{{ asset('assets/modules/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/modules/datatables.net-select-bs4/css/select.bootstrap4.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 @endsection
 
 @section('scripts')
@@ -460,4 +461,5 @@
     <script src="{{ asset('js/product/index.js') }}"></script>
     <script src="{{ asset('assets/modules/sweetalert/sweetalert2@11.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
 @endsection

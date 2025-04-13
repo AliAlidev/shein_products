@@ -58,10 +58,10 @@ class RapidapiSheinNewService
         return $result['code'] == 0 ? $result['info']['content'] ?? [] : [];
     }
 
-    public function fetchAndStoreNodes()
+    public function fetchAndStoreNodes($includedTabs = [])
     {
         //// all options - 'Women', 'Men', 'Kids', 'Beauty', 'Curve', 'Home', 'All'
-        $includedTabs = ['Men'];
+        // $includedTabs = ['Men'];
         $tabs = $this->getTabs();
         foreach ($tabs as $tab) {
             $channel = $tab['channelName'] ?? null;

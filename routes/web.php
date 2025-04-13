@@ -26,6 +26,7 @@ Route::post('price-rules-delete/{id?}', [PriceRuleController::class, 'delete'])-
 Route::match(['get','post'], 'users', [UserController::class, 'index'])->name('users');
 Route::post('/price-rules/{id}/generate-token', [UserController::class, 'generateToken'])->name('users.generate_token');
 
+Route::get('get-section-types/{channel?}', [ProductController::class, 'getSectionTypes'])->name('products.get_section_types');
 
 
 Route::match(['get','post'], 'products', [ProductController::class, 'index'])->name('products');

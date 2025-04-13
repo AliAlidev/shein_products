@@ -17,7 +17,7 @@ $(document).ready(function () {
             },
             columns: [
                 { data: 'id', name: 'id', width: '50px' },
-                { data: 'main_image', name: 'main_image', orderable: false, searchable: false, visible: false },
+                { data: 'main_image', name: 'main_image', orderable: false, searchable: false },
                 { data: 'ar_name', name: 'ar_name', visible: false },
                 { data: 'en_name', name: 'en_name' },
                 { data: 'category_ar', name: 'category_ar' },
@@ -169,15 +169,24 @@ $(document).ready(function () {
                 $('#productDetailsModal .detail-in-app').text(data.view_in_app ? 'Yes' : 'No');
                 $('#productDetailsModal #view-image-preview').empty();
                 if (data.images) {
-                    data.images.forEach(image => {
+                    data.images.forEach((image, index) => {
+                        const $link = $('<a>', {
+                            href: image,
+                            'data-fancybox': 'product-gallery',
+                            'data-caption': `Image ${index + 1}`,
+                        });
+
                         const $img = $('<img>', {
                             src: image,
                             class: 'img-thumbnail mr-2 mb-2',
                             style: 'max-width: 100px; max-height: 100px;'
                         });
-                        $('#productDetailsModal #view-image-preview').append($img);
+
+                        $link.append($img);
+                        $('#productDetailsModal #view-image-preview').append($link);
                     });
                 }
+
                 $('#productDetailsModal').modal({
                     backdrop: 'static',
                     keyboard: false
@@ -207,13 +216,21 @@ $(document).ready(function () {
                 $('#productEditModal #product_id').val(data.id);
                 $('#productEditModal #edit-image-preview').empty();
                 if (data.images) {
-                    data.images.forEach(image => {
+                    data.images.forEach((image, index) => {
+                        const $link = $('<a>', {
+                            href: image,
+                            'data-fancybox': 'product-gallery',
+                            'data-caption': `Image ${index + 1}`,
+                        });
+
                         const $img = $('<img>', {
                             src: image,
                             class: 'img-thumbnail mr-2 mb-2',
                             style: 'max-width: 100px; max-height: 100px;'
                         });
-                        $('#productEditModal #edit-image-preview').append($img);
+
+                        $link.append($img);
+                        $('#productEditModal #edit-image-preview').append($link);
                     });
                 }
                 var checked = data.view_in_app ? true : false;
@@ -433,7 +450,34 @@ $(document).ready(function () {
         });
     }
 
-    // Initialize Select2
     $('.select2').select2();
+
+    Fancybox.bind('[data-fancybox="product-gallery"]');
+
+    Fancybox.bind("[data-fancybox]", {});
+
+    $('#sections').on('change', function () {
+        var channel = $(this).val();
+        var url = $(this).data('sectionTypesUrl') + '/' + channel;
+        fillSectionTypes('section_types', url);
+        $('#section_types').trigger('change');
+    });
+
+
+    function fillSectionTypes(divId, categoriesUrl) {
+        $.ajax({
+            url: categoriesUrl,
+            type: "GET",
+            success: function (response) {
+                const $select = $('#' + divId);
+                $select.empty(); // Clear previous options
+                Object.entries(response.data).forEach(category => {
+                    const option = new Option(category[1], category[0], false, false);
+                    $select.append(option);
+                });
+                $select.trigger('change'); // Notify select2 about changes
+            }
+        });
+    }
 
 });
