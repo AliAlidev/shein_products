@@ -29,11 +29,6 @@ class TranslatePrdoductsCommand extends Command
      */
     public function handle()
     {
-        // $translationService =
         app(ChatGPTTranslationService::class)->translateBulkRecords();
-        // $products = Product::whereNull('ar_name')->map(function($product){
-        //     $translationService->
-        // });
-        // dd($products);
     }
 }

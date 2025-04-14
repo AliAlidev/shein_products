@@ -97,25 +97,17 @@ class ChatGPTTranslationService
             ->get();
 
         // 2. Process in batches
-        $totalRecords = count($records);
         $processed = 0;
 
         foreach (array_chunk($records->toArray(), self::BATCH_SIZE) as $batch) {
             try {
-                // 3. Prepare batch translation request
                 $englishTexts = array_column($batch, 'en_name');
                 $translationResults = $this->translateBatch($englishTexts);
-
-                // 4. Update records with translations
                 $this->updateTranslations($batch, $translationResults);
-                // dd($translationResults, 4);
-
                 $processed += count($batch);
-                Log::info("Processed $processed/$totalRecords records");
-
-                sleep(self::DELAY_BETWEEN_BATCHES); // Be gentle with the API
+                sleep(self::DELAY_BETWEEN_BATCHES);
             } catch (\Exception $e) {
-                Log::channel('translate_to_arabic')->alert("Batch failed: " . self::MAX_RETRIES . " attempts. Last error: " . $e->getMessage() . PHP_EOL);
+                Log::channel('translate_to_arabic')->alert("Batch failed: " . $e->getMessage() . PHP_EOL);
                 continue;
             }
         }
@@ -138,7 +130,6 @@ class ChatGPTTranslationService
                             "Input: " . json_encode($texts, JSON_UNESCAPED_UNICODE)
                     ]
                 ];
-
 
                 $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                     'headers' => [
@@ -167,8 +158,8 @@ class ChatGPTTranslationService
                         return $translations;
                     }
                 }
-
-                throw new \Exception("Invalid response format: " . substr($responseContent, 0, 100));
+                Log::channel('translate_to_arabic')->alert("Invalid response format: " . substr($responseContent, 0, 100) . PHP_EOL);
+                exit();
             } catch (\Exception $e) {
                 $lastError = $e;
                 $attempt++;
@@ -176,6 +167,7 @@ class ChatGPTTranslationService
             }
         }
         Log::channel('translate_to_arabic')->alert("Failed after: " . self::MAX_RETRIES . " attempts. Last error: " . $lastError->getMessage() . PHP_EOL);
+        exit();
     }
 
     protected function updateTranslations(array $batch, array $translations)
