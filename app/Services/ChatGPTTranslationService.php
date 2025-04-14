@@ -14,9 +14,9 @@ class ChatGPTTranslationService
     protected $apiKey;
 
     // Configuration
-    const BATCH_SIZE = 50; // Number of texts to translate per API call (adjust based on token limits)
+    const BATCH_SIZE = 25; // Number of texts to translate per API call (adjust based on token limits)
     const MAX_TOKENS_PER_BATCH = 6000; // Stay well below model's max token limit
-    const DELAY_BETWEEN_BATCHES = 1; // Seconds to wait between batches to avoid rate limiting
+    const DELAY_BETWEEN_BATCHES = 5; // Seconds to wait between batches to avoid rate limiting
     const API_TIMEOUT = 60; // Increased timeout to 60 seconds
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 5; // Seconds between retries
@@ -89,6 +89,7 @@ class ChatGPTTranslationService
 
     public function translateBulkRecords()
     {
+        Log::info("Translation batch starting ...");
         // 1. Fetch untranslated records
         $records = DB::table('products')
             ->whereNull('ar_name') // Or whatever condition marks untranslated records
@@ -125,7 +126,7 @@ class ChatGPTTranslationService
                 $messages = [
                     [
                         'role' => 'user',
-                        'content' => "Translate the following English phrases into Arabic. Return ONLY a JSON array of Arabic translations in the same order. " .
+                        'content' => "Translate the following English phrases into Arabic. Return ONLY a JSON array with numeric indexes of Arabic translations in the same order. " .
                             "No extra text. Example input: [\"Hello\", \"Goodbye\"] → Output: [\"مرحبا\", \"مع السلامة\"]\n\n" .
                             "Input: " . json_encode($texts, JSON_UNESCAPED_UNICODE)
                     ]
@@ -140,26 +141,20 @@ class ChatGPTTranslationService
                         'model' => 'gpt-3.5-turbo', // More reliable than GPT-4 for batch processing
                         'messages' => $messages,
                         'temperature' => 0.3,
+                        'response_format' => ['type' => 'json_object'],
                         'max_tokens' => 2000, // Conservative limit
                     ],
                     'timeout' => self::API_TIMEOUT
                 ]);
 
                 $raw = $response->getBody()->getContents();
-                $utf8 = mb_convert_encoding($raw, 'UTF-8', 'UTF-8');
+                $utf8 = mb_convert_encoding($raw, 'UTF-8', mb_detect_encoding($raw));
                 $body = json_decode($utf8, true);
 
-                $responseContent = $body['choices'][0]['message']['content'] ?? '';
-
-                // Extract JSON array from response
-                if (preg_match('/\[\s*".*?"\s*(?:,\s*".*?"\s*)*\]/s', $responseContent, $matches)) {
-                    $translations = json_decode($matches[0], true);
-                    if (is_array($translations) && count($translations) === count($texts)) {
-                        return $translations;
-                    }
-                }
-                Log::channel('translate_to_arabic')->alert("Invalid response format: " . substr($responseContent, 0, 100) . PHP_EOL);
-                exit();
+                $responseContent = trim($body['choices'][0]['message']['content'] ?? '');
+                $translations = json_decode($responseContent, true);
+                if ($translations != null)
+                    return $translations;
             } catch (\Exception $e) {
                 $lastError = $e;
                 $attempt++;
@@ -175,8 +170,8 @@ class ChatGPTTranslationService
         $updates = [];
 
         foreach ($batch as $index => $record) {
+            $record = json_decode(json_encode($record), true);
             if (!empty($translations[$index])) {
-                $record = json_decode(json_encode($record), true);
                 $updates[] = [
                     'id' => $record['id'],
                     'ar_name' => $translations[$index]
@@ -194,5 +189,8 @@ class ChatGPTTranslationService
                     ]);
             }
         });
+        $this->counter++;
+        Log::info("Batch success: " . $this->counter);
     }
+    protected  $counter = 0;
 }

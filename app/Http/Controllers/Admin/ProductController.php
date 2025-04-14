@@ -13,6 +13,7 @@ use App\Models\SheinNode;
 use App\Services\RapidapiSheinNewService;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\str;
 
 class ProductController extends BackendController
 {
@@ -26,9 +27,9 @@ class ProductController extends BackendController
 
     public function index(Request $request)
     {
-        $sections = SheinNode::select('channel')->distinct('channel')->pluck('channel')->toArray();
-        $sectionTypes = SheinNode::select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
-        $categories = ProductCategory::pluck('name_en', 'external_id')->toArray();
+        $sections = SheinNode::whereHas('products')->select('channel')->distinct('channel')->pluck('channel')->toArray();
+        $sectionTypes = json_decode($this->getSectionTypes()->getContent(), true)['data'];
+        $categories = json_decode($this->getCategories()->getContent(), true)['data'];
 
         if ($request->ajax()) {
             $products = $this->getFilteredProducts($request);
@@ -45,11 +46,23 @@ class ProductController extends BackendController
                 ->addColumn('category_en', function ($product) {
                     return $product->category->name_en;
                 })
+                ->addColumn('category_ar', function ($product) {
+                    return $product->category->name_ar;
+                })
                 ->editColumn('price', function ($product) {
                     return $product->price . ' ' . ($product->currency == 'USD' ? '$' : $product->currency);
                 })
-                ->addColumn('category_ar', function ($product) {
-                    return $product->category->name_ar;
+                ->addColumn('en_name', function ($product) {
+                    return Str::limit($product->en_name, 30);
+                })
+                ->addColumn('ar_name', function ($product) {
+                    return Str::limit($product->ar_name, 30);
+                })
+                ->addColumn('en_description', function ($product) {
+                    return Str::limit($product->en_description, 50);
+                })
+                ->addColumn('ar_description', function ($product) {
+                    return Str::limit($product->ar_description, 50);
                 })
                 ->addColumn('in_app_view', function ($product) {
                     $checked = $product->view_in_app ? 'checked' : '';
@@ -259,9 +272,11 @@ class ProductController extends BackendController
     {
         // $lang = getCurrentLanguage();
         $channel = is_string($channel) ? explode(",", $channel) : $channel;
-        $sectionTypes = SheinNode::when($channel, function ($query) use ($channel) {
-            $query->whereIn('channel', $channel);
-        })->select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
+        $sectionTypes = SheinNode::when($channel, function ($qrt) use ($channel) {
+            $qrt->whereIn('channel', $channel);
+        })->whereHas('products')->distinct('root_name')
+            ->pluck('root_name')
+            ->toArray();
         return response()->json([
             'success' => true,
             'message' => '',
@@ -273,7 +288,6 @@ class ProductController extends BackendController
     {
         $channel = is_string($channel) ? explode(",", $channel) : $channel;
         $sectionType = is_string($sectionType) ? explode(",", $sectionType) : $sectionType;
-
         $lang = getCurrentLanguage();
         $nodeIds = SheinNode::when($channel, function ($query) use ($channel) {
             $query->where('channel', $channel);

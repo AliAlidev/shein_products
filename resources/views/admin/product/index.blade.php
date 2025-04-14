@@ -14,7 +14,7 @@
                             <div class="row mb-3" style="display: flex; gap: 10px; flex-wrap: nowrap">
                                 <div class="col-md-4">
                                     <label for="category_id" class="form-label">Sections Filter</label>
-                                    <select class="select2 form-select w-50" multiple id="sections" data-section-types-url="{{ route('products.get_section_types') }}">
+                                    <select class="select2 form-select w-50" multiple id="sections" data-section-types-url="{{ route('products.get_section_types') }}" data-categories-url="{{ route('products.categories') }}">
                                         @foreach ($sections as $section)
                                             <option value="{{ $section }}">{{ $section }}</option>
                                         @endforeach
@@ -87,31 +87,29 @@
                                 </div>
                             </div>
 
-                            <div style="overflow-x: auto;">
-                                <table class="table table-striped" id="maintable" data-url="{{ route('products') }}"
-                                    style="width: 150%!important;">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Image</th>
-                                            <th>Arabic Name</th>
-                                            <th>English Name</th>
-                                            <th>Arabic Category</th>
-                                            <th>English Category</th>
-                                            <th>Price</th>
-                                            <th>Arabic Brand</th>
-                                            <th>English Brand</th>
-                                            <th>Arabic Description</th>
-                                            <th>English Description</th>
-                                            <th>Store</th>
-                                            <th>Barcode</th>
-                                            <th>Creation Date</th>
-                                            <th>View In App</th>
-                                            <th style="width: 10%">Actions</th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
+                            <table class="table table-striped" id="maintable" data-url="{{ route('products') }}"
+                                style="width: 180%!important;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Image</th>
+                                        <th>Arabic Name</th>
+                                        <th>English Name</th>
+                                        <th>Arabic Category</th>
+                                        <th>English Category</th>
+                                        <th>Price</th>
+                                        <th>Arabic Brand</th>
+                                        <th>English Brand</th>
+                                        <th>Arabic Description</th>
+                                        <th>English Description</th>
+                                        <th>Store</th>
+                                        <th>Barcode</th>
+                                        <th>Creation Date</th>
+                                        <th>View In App</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                            </table>
                         </div>
                     </div>
                 </div>

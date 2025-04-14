@@ -20,4 +20,8 @@ class SheinNode extends Model
         'goods_id',
         'image_url'
     ];
+
+    function products() {
+        return $this->hasMany(Product::class, 'node_id', 'id');
+    }
 }
