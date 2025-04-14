@@ -53,7 +53,25 @@ $(document).ready(function () {
             var column = table.column($(this).data('column'));
             column.visible(!column.visible());
         });
-        $('#category_id, #sections, #section_types').change(function () {
+
+        $('#sections').on('change', function (e) {
+            var channel = $(this).val();
+            var url = $(this).data('sectionTypesUrl') + '/' + channel;
+            fillSectionTypes('section_types', url);
+            table.ajax.reload();
+        });
+
+        $('#section_types').on('change', function () {
+            var channel = $('#sections').val();
+            var sectionType = $(this).val();
+            console.log(sectionType);
+
+            var sectionsUrl = $(this).data('sectionsUrl') + '/' + channel + "/" + sectionType;
+            fillCategories('category_id', sectionsUrl);
+            table.ajax.reload();
+        });
+
+        $('#category_id').change(function () {
             table.ajax.reload();
         });
     }
@@ -456,15 +474,22 @@ $(document).ready(function () {
 
     Fancybox.bind("[data-fancybox]", {});
 
-    $('#sections').on('change', function () {
-        var channel = $(this).val();
-        var url = $(this).data('sectionTypesUrl') + '/' + channel;
-        fillSectionTypes('section_types', url);
-        $('#section_types').trigger('change');
-    });
-
-
     function fillSectionTypes(divId, categoriesUrl) {
+        $.ajax({
+            url: categoriesUrl,
+            type: "GET",
+            success: function (response) {
+                const $select = $('#' + divId);
+                $select.empty(); // Clear previous options
+                Object.entries(response.data).forEach(category => {
+                    const option = new Option(category[1], category[1], false, false);
+                    $select.append(option);
+                });
+            }
+        });
+    }
+
+    function fillCategories(divId, categoriesUrl) {
         $.ajax({
             url: categoriesUrl,
             type: "GET",
@@ -475,7 +500,6 @@ $(document).ready(function () {
                     const option = new Option(category[1], category[0], false, false);
                     $select.append(option);
                 });
-                $select.trigger('change'); // Notify select2 about changes
             }
         });
     }

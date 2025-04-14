@@ -22,7 +22,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label for="category_id" class="form-label">Section Types Filter</label>
-                                    <select class="select2 form-select w-50" multiple id="section_types">
+                                    <select class="select2 form-select w-50" multiple id="section_types" data-sections-url="{{ route('products.categories') }}">
                                         @foreach ($sectionTypes as $section)
                                             <option value="{{ $section }}">{{ $section }}</option>
                                         @endforeach

@@ -27,6 +27,7 @@ Route::match(['get','post'], 'users', [UserController::class, 'index'])->name('u
 Route::post('/price-rules/{id}/generate-token', [UserController::class, 'generateToken'])->name('users.generate_token');
 
 Route::get('get-section-types/{channel?}', [ProductController::class, 'getSectionTypes'])->name('products.get_section_types');
+Route::get('get-categories/{channel?}/{section_type?}', [ProductController::class, 'getCategories'])->name('products.categories');
 
 
 Route::match(['get','post'], 'products', [ProductController::class, 'index'])->name('products');

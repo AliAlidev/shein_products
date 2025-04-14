@@ -265,13 +265,36 @@ class ProductController extends BackendController
     function getSectionTypes($channel = null)
     {
         // $lang = getCurrentLanguage();
+        $channel = is_string($channel) ? explode(",", $channel) : $channel;
         $sectionTypes = SheinNode::when($channel, function ($query) use ($channel) {
-            $query->where('channel', $channel);
+            $query->whereIn('channel', $channel);
         })->select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
         return response()->json([
             'success' => true,
             'message' => '',
             'data' => $sectionTypes
+        ]);
+    }
+
+    function getCategories($channel = null, $sectionType = null)
+    {
+        $channel = is_string($channel) ? explode(",", $channel) : $channel;
+        $sectionType = is_string($sectionType) ? explode(",", $sectionType) : $sectionType;
+
+        $lang = getCurrentLanguage();
+        $nodeIds = SheinNode::when($channel, function ($query) use ($channel) {
+            $query->where('channel', $channel);
+        })->when($sectionType, function ($query) use ($sectionType) {
+            $query->where('root_name', $sectionType);
+        })->pluck('id')->toArray();
+        $categoriesIds = Product::whereHas('node', function ($query) use ($nodeIds) {
+            $query->whereIn('id', $nodeIds);
+        })->distinct('category_id')->pluck('category_id')->toArray();
+        $categories = ProductCategory::whereIn('external_id', $categoriesIds)->pluck('name_' . $lang, 'external_id')->toArray();
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => $categories
         ]);
     }
 }
