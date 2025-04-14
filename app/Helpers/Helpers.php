@@ -7,18 +7,14 @@ if (!function_exists('translateToArabic')) {
 
     function translateToArabic($text, $openAiInstance)
     {
-        if (config('services.openai.want_translation')) {
-            if ($openAiInstance instanceof ChatGPTTranslationService) {
-                try {
-                    return $openAiInstance->translateToArabic($text);
-                } catch (\Throwable $th) {
-                    return googleFreeTranslation($text);
-                }
-            } else {
+        if ($openAiInstance instanceof ChatGPTTranslationService) {
+            try {
+                return $openAiInstance->translateToArabic($text);
+            } catch (\Throwable $th) {
                 return googleFreeTranslation($text);
             }
         } else {
-            return null;
+            return googleFreeTranslation($text);
         }
     }
 }

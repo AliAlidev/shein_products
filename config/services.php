@@ -37,7 +37,6 @@ return [
     ],
 
     'openai' => [
-        'key' => env('OPENAI_KEY'),
-        'want_translation' => env('OPENAI_WANT_TRANSLATION', false)
+        'key' => env('OPENAI_KEY')
     ]
 ];

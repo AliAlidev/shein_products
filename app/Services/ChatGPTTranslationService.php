@@ -105,18 +105,17 @@ class ChatGPTTranslationService
                 // 3. Prepare batch translation request
                 $englishTexts = array_column($batch, 'en_name');
                 $translationResults = $this->translateBatch($englishTexts);
-                dd($translationResults,4);
 
                 // 4. Update records with translations
                 $this->updateTranslations($batch, $translationResults);
+                // dd($translationResults, 4);
 
                 $processed += count($batch);
                 Log::info("Processed $processed/$totalRecords records");
 
                 sleep(self::DELAY_BETWEEN_BATCHES); // Be gentle with the API
             } catch (\Exception $e) {
-                dd($e->getMessage());
-                Log::error("Batch failed: " . $e->getMessage());
+                Log::channel('translate_to_arabic')->alert("Batch failed: " . self::MAX_RETRIES . " attempts. Last error: " . $e->getMessage() . PHP_EOL);
                 continue;
             }
         }
@@ -133,16 +132,13 @@ class ChatGPTTranslationService
             try {
                 $messages = [
                     [
-                        'role' => 'system',
-                        'content' => "Return ONLY a JSON array of Arabic translations in the same order as these English texts:\n" .
-                            json_encode($texts, JSON_UNESCAPED_UNICODE) .
-                            "\n\nFormat: [\"translation1\", \"translation2\", ...]"
-                    ],
-                    [
                         'role' => 'user',
-                        'content' => "Translate these to Arabic:"
+                        'content' => "Translate the following English phrases into Arabic. Return ONLY a JSON array of Arabic translations in the same order. " .
+                            "No extra text. Example input: [\"Hello\", \"Goodbye\"] → Output: [\"مرحبا\", \"مع السلامة\"]\n\n" .
+                            "Input: " . json_encode($texts, JSON_UNESCAPED_UNICODE)
                     ]
                 ];
+
 
                 $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
                     'headers' => [
@@ -158,11 +154,14 @@ class ChatGPTTranslationService
                     'timeout' => self::API_TIMEOUT
                 ]);
 
-                $body = json_decode($response->getBody()->getContents(), true);
+                $raw = $response->getBody()->getContents();
+                $utf8 = mb_convert_encoding($raw, 'UTF-8', 'UTF-8');
+                $body = json_decode($utf8, true);
+
                 $responseContent = $body['choices'][0]['message']['content'] ?? '';
 
                 // Extract JSON array from response
-                if (preg_match('/\[.*\]/s', $responseContent, $matches)) {
+                if (preg_match('/\[\s*".*?"\s*(?:,\s*".*?"\s*)*\]/s', $responseContent, $matches)) {
                     $translations = json_decode($matches[0], true);
                     if (is_array($translations) && count($translations) === count($texts)) {
                         return $translations;
@@ -176,8 +175,7 @@ class ChatGPTTranslationService
                 sleep(self::RETRY_DELAY * $attempt); // Exponential backoff
             }
         }
-
-        throw new \Exception("Failed after " . self::MAX_RETRIES . " attempts. Last error: " . $lastError->getMessage());
+        Log::channel('translate_to_arabic')->alert("Failed after: " . self::MAX_RETRIES . " attempts. Last error: " . $lastError->getMessage() . PHP_EOL);
     }
 
     protected function updateTranslations(array $batch, array $translations)
@@ -186,6 +184,7 @@ class ChatGPTTranslationService
 
         foreach ($batch as $index => $record) {
             if (!empty($translations[$index])) {
+                $record = json_decode(json_encode($record), true);
                 $updates[] = [
                     'id' => $record['id'],
                     'ar_name' => $translations[$index]

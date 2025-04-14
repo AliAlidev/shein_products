@@ -6,14 +6,7 @@ use App\Models\Product;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
 use App\Models\SheinNode;
-use App\Models\SheinRootNode;
-use App\Models\SheinRootNodeContent;
-use App\Models\SheinTab;
 use Carbon\Carbon;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -22,13 +15,11 @@ class RapidapiSheinNewService
 
     private $apiHost;
     private $apiKey;
-    protected $translationService;
 
-    public function __construct(ChatGPTTranslationService $translationService)
+    public function __construct()
     {
         $this->apiHost = config('services.rapidapi_shein.host');
         $this->apiKey = config('services.rapidapi_shein.key');
-        $this->translationService = $translationService;
     }
 
     function getTabs()
@@ -164,7 +155,6 @@ class RapidapiSheinNewService
                             'external_id' =>  $product['goods_id'] ?? null,
                             'normal_en_name' =>  $product['goods_name'] ?? null,
                             'en_name' =>  $productTitleAndDescription['title'] ?? null,
-                            'ar_name' => $productTitleAndDescription['title'] ? translateToArabic($productTitleAndDescription['title'], $this->translationService) : null,
                             'slug' =>  $product['goods_url_name'] ?? null,
                             'external_sku' =>  $product['goods_sn'] ?? null,
                             'price' =>  $product['retailPrice']['amount'] ?? 0,
@@ -175,7 +165,6 @@ class RapidapiSheinNewService
                             'mall_code' => $product['mall_code'] ?? null,
                             'currency' =>  'USD',
                             'en_description' =>  $productTitleAndDescription['description'] ?? null,
-                            'ar_description' => $productTitleAndDescription['description'] ? translateToArabic($productTitleAndDescription['description'], $this->translationService) : null,
                             'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew']),
                             'category_id' => $this->checkCategoryAndCreateIfNotExists($product),
                             'store' => 'Shein',
@@ -269,9 +258,7 @@ class RapidapiSheinNewService
             $brand = ProductBrand::updateOrCreate(['external_id' => $brandObject['brandId']], [
                 'external_id' => $brandObject['brandId'] ?? null,
                 'brand_name_en' => $brandObject['brandName'] ?? null,
-                'brand_name_ar' => $brandObject['brandName'] ? translateToArabic($brandObject['brandName'], $this->translationService) : null,
                 'brand_badge_name_en' => $brandObject['brand_badge_name'] ?? null,
-                'brand_badge_name_ar' => $brandObject['brand_badge_name'] ? translateToArabic($brandObject['brand_badge_name'], $this->translationService) : null,
                 'brand_code' => $brandObject['brand_code'] ?? null,
                 'series_badge_name_en' => $brandObject['series_badge_name'] ?? null,
                 'series_id' => $brandObject['seriesId'] ?? null,
@@ -288,8 +275,7 @@ class RapidapiSheinNewService
             'external_id' => $productObject['cat_id']
         ], [
             'external_id' => $productObject['cat_id'],
-            'name_en' => $productObject['cate_name'],
-            'name_ar' => translateToArabic($productObject['cate_name'], $this->translationService)
+            'name_en' => $productObject['cate_name']
         ]);
         return $category->external_id;
     }

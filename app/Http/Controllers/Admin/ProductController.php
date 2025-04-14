@@ -3,18 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\ProductsExport;
-use App\Models\User;
-use App\Models\Bank;
-use App\Models\Restaurant;
 use Illuminate\Http\Request;
 use Yajra\Datatables\Datatables;
-use App\Http\Requests\BankRequest;
 use App\Http\Controllers\BackendController;
 use App\Http\Traits\FileTrait;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SheinNode;
-use App\Services\ChatGPTTranslationService;
 use App\Services\RapidapiSheinNewService;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
@@ -31,8 +26,6 @@ class ProductController extends BackendController
 
     public function index(Request $request)
     {
-        // app(ChatGPTTranslationService::class)->translateBulkRecords();
-        // dd("done");
         $sections = SheinNode::select('channel')->distinct('channel')->pluck('channel')->toArray();
         $sectionTypes = SheinNode::select('root_name')->distinct('root_name')->pluck('root_name')->toArray();
         $categories = ProductCategory::pluck('name_en', 'external_id')->toArray();
@@ -42,9 +35,9 @@ class ProductController extends BackendController
             return DataTables::of($products)
                 ->addColumn('main_image', function ($product) {
                     $image = $product->images[0] ?? null;
-                    return '<a data-fancybox="gallery-' . $product->id . '" href="' . $image . '">
+                    return $image ? '<a data-fancybox="gallery-' . $product->id . '" href="' . $image . '">
                                 <img src="' . $image . '" style="width: 50px; height: 50px; object-fit: cover;" />
-                            </a>';
+                            </a>' : null;
                 })
                 ->addColumn('brand', function ($product) {
                     return $product->brand;
@@ -140,7 +133,7 @@ class ProductController extends BackendController
         ]);
     }
 
-    public function exportCurrentPage(Request $request)
+    function exportCurrentPage(Request $request)
     {
         $query = $this->getFilteredProducts($request);
         if ($request->has('search') && !empty($request->search)) {

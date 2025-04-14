@@ -132,6 +132,11 @@ return [
             'path' => storage_path('logs/mqtt_log.log'),
         ],
 
+        'translate_to_arabic' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/translate_to_arabic.log'),
+        ],
+
         'mqtt_webhook_log' => [
             'driver' => 'single',
             'path' => storage_path('logs/mqtt_webhook_log.log'),
