@@ -6,7 +6,7 @@ use App\Models\Product;
 use App\Services\ChatGPTTranslationService;
 use Illuminate\Console\Command;
 
-class TranslatePrdoductsCommand extends Command
+class TranslateProductsCommand extends Command
 {
     /**
      * The name and signature of the console command.
