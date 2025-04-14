@@ -7,6 +7,9 @@ $(document).ready(function () {
             processing: true,
             serverSide: true,
             pageLength: 10,
+            scrollY: '500px',
+            scrollX: 'auto',
+            scrollCollapse: true,
             ajax: {
                 url: $('#maintable').attr('data-url'),
                 data: function (d) {
@@ -16,24 +19,28 @@ $(document).ready(function () {
                 }
             },
             columns: [
-                { data: 'id', name: 'id', width: '50px' },
-                { data: 'main_image', name: 'main_image', orderable: false, searchable: false },
-                { data: 'ar_name', name: 'ar_name', visible: false },
-                { data: 'en_name', name: 'en_name' },
-                { data: 'category_ar', name: 'category_ar' },
-                { data: 'category_en', name: 'category_en' },
-                { data: 'price', name: 'price' },
-                { data: 'ar_brand', name: 'ar_brand', orderable: false, visible: false },
-                { data: 'en_brand', name: 'en_brand', orderable: false },
-                { data: 'ar_description', name: 'ar_description', orderable: false, visible: false, width: '20%' },
-                { data: 'en_description', name: 'en_description', orderable: false, width: '20%' },
-                { data: 'store', name: 'store' },
-                { data: 'barcode', name: 'barcode' },
-                { data: 'creation_date', name: 'creation_date' },
-                { data: 'in_app_view', name: 'in_app_view', orderable: false, searchable: false },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
+                { data: 'id', name: 'id', width: '5%' },
+                { data: 'main_image', name: 'main_image', orderable: false, searchable: false, width: '5%' },
+                { data: 'ar_name', name: 'ar_name', visible: false, width: '15%' },
+                { data: 'en_name', name: 'en_name', width: '15%' },
+                { data: 'category_ar', name: 'category_ar', width: '10%' },
+                { data: 'category_en', name: 'category_en', width: '10%' },
+                { data: 'price', name: 'price', width: '5%' },
+                { data: 'ar_brand', name: 'ar_brand', orderable: false, visible: false, width: '5%' },
+                { data: 'en_brand', name: 'en_brand', orderable: false, width: '5%' },
+                { data: 'ar_description', name: 'ar_description', orderable: false, visible: false, width: '15%' },
+                { data: 'en_description', name: 'en_description', orderable: false, width: '15%' },
+                { data: 'store', name: 'store', width: '5%' },
+                { data: 'barcode', name: 'barcode', visible: false },
+                { data: 'creation_date', name: 'creation_date', width: '5%' },
+                { data: 'in_app_view', name: 'in_app_view', orderable: false, searchable: false, width: '5%' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, width: '10%' }
             ],
-            ordering: false
+            ordering: false,
+            // drawCallback: function () {
+            //     $('#maintable-info-text').html($('.dataTables_info'));
+            //     $('#maintable-pagination').html($('.dataTables_paginate'));
+            // }
         });
         $('#columnToggles').empty();
         table.columns().every(function (index) {
@@ -58,14 +65,14 @@ $(document).ready(function () {
             var channel = $(this).val();
             var url = $(this).data('sectionTypesUrl') + '/' + channel;
             fillSectionTypes('section_types', url);
+            var categoriesUrl = $(this).data('categoriesUrl');
+            fillCategories('category_id', categoriesUrl);
             table.ajax.reload();
         });
 
         $('#section_types').on('change', function () {
             var channel = $('#sections').val();
             var sectionType = $(this).val();
-            console.log(sectionType);
-
             var sectionsUrl = $(this).data('sectionsUrl') + '/' + channel + "/" + sectionType;
             fillCategories('category_id', sectionsUrl);
             table.ajax.reload();
