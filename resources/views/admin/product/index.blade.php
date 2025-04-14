@@ -13,7 +13,7 @@
                         <div class="card-body">
                             <div class="row mb-3" style="display: flex; gap: 10px; flex-wrap: nowrap">
                                 <div class="col-md-4">
-                                    <label for="category_id" class="form-label">Sections Filter</label>
+                                    <label for="sections" class="form-label">Sections Filter</label>
                                     <select class="select2 form-select w-50" multiple id="sections" data-section-types-url="{{ route('products.get_section_types') }}" data-categories-url="{{ route('products.categories') }}">
                                         @foreach ($sections as $section)
                                             <option value="{{ $section }}">{{ $section }}</option>
@@ -21,7 +21,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="category_id" class="form-label">Section Types Filter</label>
+                                    <label for="section_types" class="form-label">Section Types Filter</label>
                                     <select class="select2 form-select w-50" multiple id="section_types" data-sections-url="{{ route('products.categories') }}">
                                         @foreach ($sectionTypes as $section)
                                             <option value="{{ $section }}">{{ $section }}</option>

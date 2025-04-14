@@ -80,7 +80,23 @@
                             </div>
                         </div>
                         <div class="row" style="display: none" id="apply_to_div_update" data-categories-url="{{ route('price_rules.get_categories') }}" data-products-url="{{ route('price_rules.get_products') }}">
-                            <div class="col-md-12">
+                            <div class="col-md-6" id="sections_update_div" style="display: none">
+                                <label for="sections_update" class="form-label">Sections Filter</label>
+                                <select class="select2 form-select w-50" multiple id="sections_update" data-section-types-url="{{ route('products.get_section_types') }}" data-categories-url="{{ route('products.categories') }}">
+                                    @foreach ($sections as $section)
+                                        <option value="{{ $section }}">{{ $section }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="section_types_update_div" style="display: none">
+                                <label for="section_types_update" class="form-label">Section Types Filter</label>
+                                <select class="select2 form-select w-50" multiple id="section_types_update" data-sections-url="{{ route('products.categories') }}">
+                                    @foreach ($sectionTypes as $section)
+                                        <option value="{{ $section }}">{{ $section }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-12 mt-2">
                                 <div class="form-group">
                                     <label>Apply To:</label>
                                     <select name="apply_to[]" id="apply_to_update" multiple class="select2 form-control">
@@ -144,7 +160,23 @@
                             </div>
                         </div>
                         <div class="row" style="display: none" id="apply_to_div">
-                            <div class="col-md-12">
+                            <div class="col-md-6" id="sections_div" style="display: none">
+                                <label for="sections" class="form-label">Sections Filter</label>
+                                <select class="select2 form-select w-50" multiple id="sections" data-section-types-url="{{ route('products.get_section_types') }}" data-categories-url="{{ route('products.categories') }}">
+                                    @foreach ($sections as $section)
+                                        <option value="{{ $section }}">{{ $section }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="section_types_div" style="display: none">
+                                <label for="section_types" class="form-label">Section Types Filter</label>
+                                <select class="select2 form-select w-50" multiple id="section_types" data-sections-url="{{ route('products.categories') }}">
+                                    @foreach ($sectionTypes as $section)
+                                        <option value="{{ $section }}">{{ $section }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-12 mt-2">
                                 <div class="form-group">
                                     <label>Apply To:</label>
                                     <select name="apply_to[]" id="apply_to" multiple class="select2 form-control">

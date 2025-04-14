@@ -26,6 +26,21 @@ $(document).ready(function () {
         });
     }
 
+    $('#sections').on('change', function (e) {
+        var channel = $(this).val();
+        var url = $(this).data('sectionTypesUrl') + '/' + channel;
+        fillSectionTypes('section_types', url);
+        var categoriesUrl = $(this).data('categoriesUrl');
+        fillCategories('apply_to', categoriesUrl);
+    });
+
+    $('#section_types').on('change', function () {
+        var channel = $('#sections').val();
+        var sectionType = $(this).val();
+        var sectionsUrl = $(this).data('sectionsUrl') + '/' + channel + "/" + sectionType;
+        fillCategories('apply_to', sectionsUrl);
+    });
+
     $(document).on('click', '.edit-price-rule', function (e) {
         e.preventDefault();
         var url = $(this).data('url');
@@ -40,10 +55,14 @@ $(document).ready(function () {
                     $('#priceRuleUpdateModal #apply_to_div_update').hide();
                 } else if (data.apply_per == 'Category') {
                     $('#priceRuleUpdateModal #apply_to_div_update').show();
+                    $('#sections_update_div').show();
+                    $('#section_types_update_div').show();
                     $('#priceRuleUpdateModal #apply_to').empty();
                     fillCategories('apply_to_update', $('#apply_to_div_update').data('categoriesUrl'), data.apply_to);
                 } else if (data.apply_per == 'Product') {
                     $('#priceRuleUpdateModal #apply_to_div_update').show();
+                    $('#sections_update_div').hide();
+                    $('#section_types_update_div').hide();
                     $('#priceRuleUpdateModal #apply_to').empty();
                     fillProducts('apply_to_update', $('#apply_to_div_update').data('productsUrl'), data.apply_to);
                 }
@@ -185,6 +204,8 @@ $(document).ready(function () {
 
     $('#priceRuleUpdateModal').on('hidden.bs.modal', function (e) {
         $('#update-form')[0].reset();
+        $('#update-form').find('.select2').val(null).trigger('change');
+        $('#update-form').removeClass('was-validated');
         $('#edit-image-preview').empty();
     });
 
@@ -209,9 +230,13 @@ $(document).ready(function () {
             $('#apply_to_div').show();
             $('#apply_to').empty();
             if (this.value == 'Category') {
+                $('#sections_div').show();
+                $('#section_types_div').show();
                 fillCategories('apply_to', $(this).data('categoriesUrl'));
             }
             else if (this.value == 'Product') {
+                $('#sections_div').hide();
+                $('#section_types_div').hide();
                 fillProducts('apply_to', $(this).data('productsUrl'));
             }
         } else {
@@ -224,9 +249,13 @@ $(document).ready(function () {
             $('#apply_to_div_update').show();
             $('#apply_to_update').empty();
             if (this.value == 'Category') {
+                $('#sections_update_div').show();
+                $('#section_types_update_div').show();
                 fillCategories('apply_to_update', $(this).data('categoriesUrl'));
             }
             else if (this.value == 'Product') {
+                $('#sections_update_div').hide();
+                $('#section_types_update_div').hide();
                 fillProducts('apply_to_update', $(this).data('productsUrl'));
             }
         } else {
@@ -235,6 +264,7 @@ $(document).ready(function () {
     });
 
     function fillCategories(divId, categoriesUrl, selected = []) {
+        $('#' + divId).empty();
         $.ajax({
             url: categoriesUrl,
             type: "GET",
@@ -251,16 +281,39 @@ $(document).ready(function () {
     }
 
     function fillProducts(divId, productsUrl, selected = []) {
+        $('#' + divId).select2({
+            placeholder: 'Search for a product',
+            minimumInputLength: 2,
+            allowClear: true,
+            ajax: {
+                url: productsUrl,
+                type: 'GET',
+                delay: 250, // Debounce to reduce server calls
+                cache: true,
+                dataType: 'json',
+                processResults: function (data) {
+                    return {
+                        results: Object.entries(data.data).map(([id, text]) => ({
+                            id,
+                            text
+                        }))
+                    };
+                }
+            }
+        });
+        $('#' + divId).val(selected).trigger('change');
+    }
+
+    function fillSectionTypes(divId, categoriesUrl) {
         $.ajax({
-            url: productsUrl,
+            url: categoriesUrl,
             type: "GET",
             success: function (response) {
+                const $select = $('#' + divId);
+                $select.empty(); // Clear previous options
                 Object.entries(response.data).forEach(category => {
-                    const option = new Option(category[1], category[0]);
-                    if (Array.isArray(selected) && selected.includes(category[0].toString())) {
-                        option.selected = true;
-                    }
-                    $('#' + divId).append(option);
+                    const option = new Option(category[1], category[1], false, false);
+                    $select.append(option);
                 });
             }
         });

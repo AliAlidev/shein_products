@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PriceRule;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\SheinNode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\Calculation\Financial\Securities\Price;
@@ -15,6 +16,8 @@ class PriceRuleController extends Controller
 {
     public function index(Request $request)
     {
+        $sections = SheinNode::whereHas('products')->select('channel')->distinct('channel')->pluck('channel')->toArray();
+        $sectionTypes = json_decode($this->getSectionTypes()->getContent(), true)['data'];
         $priceRules = PriceRule::query();
         if ($request->ajax()) {
             return DataTables::of($priceRules)
@@ -27,7 +30,7 @@ class PriceRuleController extends Controller
                 ->rawColumns(['action'])
                 ->make(true);
         }
-        return view('admin.price_rule.index');
+        return view('admin.price_rule.index', ['sections' => $sections, 'sectionTypes' => $sectionTypes]);
     }
 
     function create(Request $request)
@@ -70,6 +73,21 @@ class PriceRuleController extends Controller
         ]);
     }
 
+    function getSectionTypes($channel = null)
+    {
+        $channel = is_string($channel) ? explode(",", $channel) : $channel;
+        $sectionTypes = SheinNode::when($channel, function ($qrt) use ($channel) {
+            $qrt->whereIn('channel', $channel);
+        })->whereHas('products')->distinct('root_name')
+            ->pluck('root_name')
+            ->toArray();
+        return response()->json([
+            'success' => true,
+            'message' => '',
+            'data' => $sectionTypes
+        ]);
+    }
+
     function getCategories()
     {
         $lang = getCurrentLanguage();
@@ -81,14 +99,17 @@ class PriceRuleController extends Controller
         ]);
     }
 
-    function getProducts()
+    function getProducts(Request $request)
     {
+        $search = $request->query('q');
         $lang = getCurrentLanguage();
-        $categories = Product::pluck($lang . '_name', 'external_id')->toArray();
+        $products = Product::when($search, function ($q) use ($search) {
+            $q->search($search);
+        })->pluck($lang . '_name', 'external_id')->toArray();
         return response()->json([
             'success' => true,
             'message' => '',
-            'data' => $categories
+            'data' => $products
         ]);
     }
 

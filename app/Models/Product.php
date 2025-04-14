@@ -15,6 +15,26 @@ class Product extends Model
         'parent_categories' => 'array'
     ];
 
+    public function scopeSearch($query, $term)
+    {
+        $term = $term . '%';
+        return $query->where(function ($q) use ($term) {
+            $q->where('ar_name', 'LIKE', $term)
+                ->orWhere('en_name', 'LIKE', $term)
+                ->orWhere('slug', 'LIKE', $term)
+                ->orWhere('external_sku', 'LIKE', $term)
+                ->orWhere('price', 'LIKE', $term)
+                ->orWhere('currency', 'LIKE', $term)
+                ->orWhere('ar_description', 'LIKE', $term)
+                ->orWhere('en_description', 'LIKE', $term)
+                ->orWhere('store', 'LIKE', $term)
+                ->orWhere('barcode', 'LIKE', $term)
+                ->orWhere('video_url', 'LIKE', $term)
+                ->orWhere('mall_code', 'LIKE', $term);
+        });
+    }
+
+
     function primaryImage()
     {
         return $this->primary_image ?? $this->images[0] ?? null;

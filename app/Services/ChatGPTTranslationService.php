@@ -14,7 +14,7 @@ class ChatGPTTranslationService
     protected $apiKey;
 
     // Configuration
-    const BATCH_SIZE = 25; // Number of texts to translate per API call (adjust based on token limits)
+    const BATCH_SIZE = 50; // Number of texts to translate per API call (adjust based on token limits)
     const MAX_TOKENS_PER_BATCH = 6000; // Stay well below model's max token limit
     const DELAY_BETWEEN_BATCHES = 5; // Seconds to wait between batches to avoid rate limiting
     const API_TIMEOUT = 60; // Increased timeout to 60 seconds
