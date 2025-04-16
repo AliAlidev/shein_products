@@ -264,6 +264,8 @@ $(document).ready(function () {
     });
 
     function fillCategories(divId, categoriesUrl, selected = []) {
+        $('#' + divId).select2({
+            placeholder: 'Search for a category'});
         $('#' + divId).empty();
         $.ajax({
             url: categoriesUrl,
@@ -293,15 +295,18 @@ $(document).ready(function () {
                 dataType: 'json',
                 processResults: function (data) {
                     return {
-                        results: Object.entries(data.data).map(([id, text]) => ({
-                            id,
-                            text
-                        }))
+                        results: Object.entries(data.data).map(([id, text]) => ({id,text}))
                     };
                 }
             }
         });
-        $('#' + divId).val(selected).trigger('change');
+
+        if (selected) {
+            Object.entries(selected).forEach(item => {
+                const option = new Option(item[1], item[0], true, true);
+                $('#' + divId).append(option).trigger('change');
+            })
+        }
     }
 
     function fillSectionTypes(divId, categoriesUrl) {

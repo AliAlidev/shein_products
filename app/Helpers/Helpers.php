@@ -39,3 +39,16 @@ if (!function_exists('getCurrentLanguage')) {
             return 'en';
     }
 }
+
+if (!function_exists('getDesiredCurrency')) {
+    function getDesiredCurrency()
+    {
+        if (request()->hasHeader('currency')) {
+            $currency = request()->header('currency');
+            $currency = str_replace(' ', '', $currency);
+            in_array($currency, ['AED', 'USD', 'SYP']) ?: $currency = 'USD';
+            return $currency;
+        } else
+            return 'USD';
+    }
+}

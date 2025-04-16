@@ -135,6 +135,21 @@ class ProductController extends BackendController
         return 1;
     }
 
+    function syncProductsDailyCommand()
+    {
+        // get current nodes
+        $allowedSections = ['Men', 'Women'];
+        $allowedSectionTypes = ['Fall & Winter', 'Trends', 'Clothing', 'Tops', 'Bottoms', 'Sports & Outdoor', 'Swimwear', 'Extended Sizes', 'Baby 0-3Yrs', 'Fall & Winter', 'Sale'];
+        $nodeIds = Product::groupBy('node_id')->pluck('node_id')->toArray();
+        SheinNode::whereIn('id', $nodeIds)
+            ->whereIn('channel', $allowedSections)
+            ->whereIn('root_name', $allowedSectionTypes)
+            ->get()->map(function ($node) {
+                $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);
+            });
+        return 1;
+    }
+
     function changeViewProductOnAppStatus($id)
     {
         $product = Product::find($id);

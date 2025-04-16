@@ -189,8 +189,8 @@ class ChatGPTTranslationService
                     ]);
             }
         });
-        $this->counter++;
-        Log::info("Batch success: " . $this->counter);
+        $this->counter += count($updates);
+        Log::info("Total new records " . $this->counter);
     }
     protected  $counter = 0;
 }

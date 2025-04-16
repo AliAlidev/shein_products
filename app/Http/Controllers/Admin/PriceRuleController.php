@@ -154,6 +154,7 @@ class PriceRuleController extends Controller
                 'message' => 'Price rule updated successfully'
             ]);
         }
+        $priceRule->apply_to = $priceRule->apply_per == 'Product'? (Product::whereIn('external_id', $priceRule->apply_to)->pluck('en_name', 'external_id')->toArray()) : $priceRule->apply_to;
         return response()->json([
             'success' => true,
             'message' => '',

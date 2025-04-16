@@ -18,5 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'v1'], function () {
     Route::post('login', [ApiLoginController::class, 'login']);
     Route::middleware('auth:api')->get('get-products', [ApiProductController::class, 'list']);
-    Route::middleware('auth:api')->get('get-categories', [ApiProductController::class, 'categories']);
+    Route::middleware('auth:api')->get('get-sections', [ApiProductController::class, 'getSections']);
+    Route::middleware('auth:api')->get('get-section-types', [ApiProductController::class, 'getSectionTypes']);
+    Route::middleware('auth:api')->get('get-categories', [ApiProductController::class, 'getCategories']);
 });
