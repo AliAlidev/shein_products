@@ -28,6 +28,6 @@ class FetchSheinNodesCommand extends Command
      */
     public function handle()
     {
-        return app(ProductController::class)->syncNodesCommand(['Women']);
+        return app(ProductController::class)->syncNodesCommand();
     }
 }

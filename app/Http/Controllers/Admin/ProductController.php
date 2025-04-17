@@ -119,9 +119,9 @@ class ProductController extends BackendController
     //     //     ]);
     // }
 
-    function syncNodesCommand($includedTabs = [])
+    function syncNodesCommand()
     {
-        $this->rapidapiSheinService->fetchAndStoreNodes($includedTabs);
+        $this->rapidapiSheinService->fetchAndStoreNodes();
         return 1;
     }
 
@@ -138,15 +138,13 @@ class ProductController extends BackendController
     function syncProductsDailyCommand()
     {
         // get current nodes
-        $allowedSections = ['Men', 'Women'];
-        $allowedSectionTypes = ['Fall & Winter', 'Trends', 'Clothing', 'Tops', 'Bottoms', 'Sports & Outdoor', 'Swimwear', 'Extended Sizes', 'Baby 0-3Yrs', 'Fall & Winter', 'Sale'];
-        $nodeIds = Product::groupBy('node_id')->pluck('node_id')->toArray();
-        SheinNode::whereIn('id', $nodeIds)
-            ->whereIn('channel', $allowedSections)
-            ->whereIn('root_name', $allowedSectionTypes)
-            ->get()->map(function ($node) {
-                $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);
-            });
+        // $allowedSections = ['Men', 'Women'];
+        // $allowedSectionTypes = ['Fall & Winter', 'Trends', 'Clothing', 'Tops', 'Bottoms', 'Sports & Outdoor', 'Swimwear', 'Extended Sizes', 'Baby 0-3Yrs', 'Fall & Winter', 'Sale'];
+        // $nodeIds = Product::groupBy('node_id')->pluck('node_id')->toArray();
+        $nodes = SheinNode::orderBy('id', 'asc')->get();
+        $nodes->each(function ($node) {
+            $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);
+        });
         return 1;
     }
 

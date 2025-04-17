@@ -18,7 +18,8 @@ class SheinNode extends Model
         'href_type',
         'href_target',
         'goods_id',
-        'image_url'
+        'image_url',
+        'is_empty'
     ];
 
     function products() {

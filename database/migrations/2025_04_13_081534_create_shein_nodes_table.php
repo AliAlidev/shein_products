@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('href_target');
             $table->string('goods_id')->nullable();
             $table->string('image_url')->nullable();
+            $table->boolean('is_empty')->default(0);
             $table->timestamps();
 
             $table->index('channel');
