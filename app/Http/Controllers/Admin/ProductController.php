@@ -7,10 +7,13 @@ use Illuminate\Http\Request;
 use Yajra\Datatables\Datatables;
 use App\Http\Controllers\BackendController;
 use App\Http\Traits\FileTrait;
+use App\Models\FetchIngProductTrackers;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\SheinNode;
 use App\Services\RapidapiSheinNewService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\str;
@@ -137,10 +140,6 @@ class ProductController extends BackendController
 
     function syncProductsDailyCommand()
     {
-        // get current nodes
-        // $allowedSections = ['Men', 'Women'];
-        // $allowedSectionTypes = ['Fall & Winter', 'Trends', 'Clothing', 'Tops', 'Bottoms', 'Sports & Outdoor', 'Swimwear', 'Extended Sizes', 'Baby 0-3Yrs', 'Fall & Winter', 'Sale'];
-        // $nodeIds = Product::groupBy('node_id')->pluck('node_id')->toArray();
         $nodes = SheinNode::orderBy('id', 'asc')->get();
         $nodes->each(function ($node) {
             $this->rapidapiSheinService->insertProductsWitPagination($node->href_target, $node->goods_id, $node->id);

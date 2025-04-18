@@ -6,6 +6,7 @@ use App\Models\FetchIngProductTrackers;
 use App\Models\Product;
 use App\Models\ProductBrand;
 use App\Models\ProductCategory;
+use App\Models\RapidApiSheinRequestTrackers;
 use App\Models\SheinNode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -17,12 +18,17 @@ class RapidapiSheinNewService
 
     private $apiHost;
     private $apiKey;
-    const MAX_ALLOWED_PAGES=1;
+    private $maxAllowedPages = 1;
+    private $productsTrackerFile;
 
     public function __construct()
     {
         $this->apiHost = config('services.rapidapi_shein.host');
         $this->apiKey = config('services.rapidapi_shein.key');
+
+        $jsonPath = storage_path('app/product_trackers.json');
+        $jsonString = file_get_contents($jsonPath);
+        $this->productsTrackerFile = json_decode($jsonString, true);
     }
 
     function getTabs()
@@ -1133,7 +1139,7 @@ class RapidapiSheinNewService
         $currentValue = Session::get('request_counter', 0);
         $currentValue++;
         Session::put('request_counter', $currentValue);
-        Log::info("Request counter: " . Session::get('request_counter'));
+        // Log::info("Request counter: " . Session::get('request_counter'));
         return $final;
     }
 
@@ -1142,72 +1148,111 @@ class RapidapiSheinNewService
     {
         FetchIngProductTrackers::updateOrCreate(
             [
-                'node_id' => $nodeId
+                'node_id' => $nodeId,
+                'last_updated' => Carbon::now()->format('Y-m-d')
             ],
             [
                 'node_id' => $nodeId,
                 'total_products' => $productsCount,
-                'last_page' => $page
+                'last_page' => $page,
+                'last_updated' => Carbon::now()->format('Y-m-d')
             ]
         );
     }
+
 
     public function insertProductsWitPagination($catId, $adp, $nodeId)
     {
         $page = 1;
         $totalProducts = 0;
-        $trackers = FetchIngProductTrackers::where('node_id', $nodeId)->first();
+        if ($this->checkIfAllNodeProductsUpdated($nodeId))
+            return true;
+        $trackers = FetchIngProductTrackers::where('node_id', $nodeId)->where('last_updated', Carbon::now()->format('Y-m-d'))->first();
+        $trackerCollection = collect($this->productsTrackerFile)->where('node_id', $nodeId)->first();
+        $this->maxAllowedPages = $trackerCollection ? $trackerCollection['last_page'] : 1;
         if ($trackers) {
             if ($trackers->is_finished) return;
             if ($trackers->total_products > 19) {
                 $final_total_pages = ceil($trackers->total_products / 19);
                 $page = isset($trackers->last_page) ? ($trackers->last_page + 1) : 1;
-                if ($page > $final_total_pages || $page > SELF::MAX_ALLOWED_PAGES) {
+                if ($page > $final_total_pages || $page > $this->maxAllowedPages) {
                     $this->updateTrackerISFinishedStatus($trackers, $nodeId);
                     return;
                 }
             }
         }
         do {
-            if ($page > SELF::MAX_ALLOWED_PAGES) {
+            if ($page > $this->maxAllowedPages) {
                 $this->updateTrackerISFinishedStatus($trackers, $nodeId);
                 break;
             }
             Log::info("node id: " . $nodeId);
             $products = $this->getProducts($catId, $adp, $page);
+            $this->updateRequestCounter($nodeId);
             $this->updateTrackersTable($nodeId, $page, $products['total']);
             if ($products['current_count'] > 0) {
                 foreach ($products['products'] as $key => $product) {
                     $productTitleAndDescription = $this->extractProductDetails($product);
-                    $productModel = Product::updateOrCreate(
-                        [
-                            'external_id' =>  $product['goods_id']
-                        ],
-                        [
-                            'external_id' =>  $product['goods_id'] ?? null,
-                            'normal_en_name' =>  $product['goods_name'] ?? null,
-                            'en_name' =>  $productTitleAndDescription['title'] ?? null,
-                            'slug' =>  $product['goods_url_name'] ?? null,
-                            'external_sku' =>  $product['goods_sn'] ?? null,
-                            'price' =>  $product['retailPrice']['amount'] ?? 0,
-                            'primary_image' => $product['goods_img'] ?? null,
-                            'is_lowest_price' => $product['is_lowest_price'] ?? 0,
-                            'is_highest_sales' => $product['is_highest_sales'] ?? 0,
-                            'video_url' => $product['video_url'] ?? null,
-                            'mall_code' => $product['mall_code'] ?? null,
-                            'currency' =>  'USD',
-                            'en_description' =>  $productTitleAndDescription['description'] ?? null,
-                            'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew']),
-                            'category_id' => $this->checkCategoryAndCreateIfNotExists($product),
-                            'store' => 'Shein',
-                            'creation_date'  => Carbon::now()->format('Y-m-d'),
-                            'images' => $product['detail_image'] ?? [],
-                            'parent_categories' => $product['parentIds'] ?? [],
-                            'node_id' => $nodeId
-                        ]
-                    );
+                    $productModel = Product::where('external_id', $product['goods_id'])->first();
+                    if (!$productModel) {
+                        continue;
+                        $productModel = Product::create(
+                            [
+                                'external_id' =>  $product['goods_id'] ?? null,
+                                'normal_en_name' =>  $product['goods_name'] ?? null,
+                                'en_name' =>  $productTitleAndDescription['title'] ?? null,
+                                'slug' =>  $product['goods_url_name'] ?? null,
+                                'external_sku' =>  $product['goods_sn'] ?? null,
+                                'price' =>  $product['retailPrice']['amount'] ?? 0,
+                                'primary_image' => $product['goods_img'] ?? null,
+                                'is_lowest_price' => $product['is_lowest_price'] ?? 0,
+                                'is_highest_sales' => $product['is_highest_sales'] ?? 0,
+                                'video_url' => $product['video_url'] ?? null,
+                                'mall_code' => $product['mall_code'] ?? null,
+                                'currency' =>  'USD',
+                                'en_description' =>  $productTitleAndDescription['description'] ?? null,
+                                'brand_id' => $this->checkBrandAndCreateIfNotExists($product['premiumFlagNew']),
+                                'category_id' => $this->checkCategoryAndCreateIfNotExists($product),
+                                'store' => 'Shein',
+                                'creation_date'  => Carbon::now()->format('Y-m-d'),
+                                'last_updated'  => Carbon::now()->format('Y-m-d'),
+                                'images' => $product['detail_image'] ?? [],
+                                'parent_categories' => $product['parentIds'] ?? [],
+                                'node_id' => $nodeId
+                            ]
+                        );
+                    } else {
+                        $productModel->price = $product['retailPrice']['amount'] ?? 0;
+                        $productModel->primary_image = $product['goods_img'] ?? null;
+                        $productModel->is_lowest_price = $product['is_lowest_price'] ?? 0;
+                        $productModel->is_highest_sales = $product['is_highest_sales'] ?? 0;
+                        $productModel->video_url = $product['video_url'] ?? null;
+                        $productModel->mall_code = $product['mall_code'] ?? null;
+                        $productModel->images = $product['detail_image'] ?? [];
+                        $productModel->parent_categories = $product['parentIds'] ?? [];
+                        $productModel->last_updated = Carbon::now()->format('Y-m-d');
+                        $productModel->save();
+                    }
                     if (!$productModel->details()->exists()) {
                         $productModel->details()->create([
+                            'product_relation_id' => $product['productRelationID'] ?? null,
+                            'product_material' => $product['productMaterial'] ?? [],
+                            'retail_price' => $product['retailPrice']['amount'] ?? 0,
+                            'sale_price' => $product['salePrice']['amount'] ?? 0,
+                            'discount_price' => $product['discountPrice']['amount'] ?? 0,
+                            'retail_discount_price' => $product['retailDiscountPrice']['amount'] ?? 0,
+                            'unit_discount' => $product['unit_discount'] ?? null,
+                            'srp_discount' => $product['srpDiscount'] ?? null,
+                            'promotion_info' => $product['promotionInfo'] ?? [],
+                            'stock' => $product['stock'] ?? 0,
+                            'sold_out_status' => $product['soldOutStatus'] ?? false,
+                            'is_on_sale' => $product['is_on_sale'] ?? 0,
+                            'related_color_new' => $product['relatedColorNew'] ?? [],
+                            'feature_subscript' => $product['featureSubscript'] ?? [],
+                            'coupon_prices' => $product['coupon_prices'] ?? []
+                        ]);
+                    } else {
+                        $productModel->details()->update([
                             'product_relation_id' => $product['productRelationID'] ?? null,
                             'product_material' => $product['productMaterial'] ?? [],
                             'retail_price' => $product['retailPrice']['amount'] ?? 0,
@@ -1233,12 +1278,35 @@ class RapidapiSheinNewService
         $this->updateTrackerISFinishedStatus($trackers, $nodeId);
     }
 
+    function checkIfAllNodeProductsUpdated($nodeId)
+    {
+        $updatedProducts =  Product::where('node_id', $nodeId)->whereDate('last_updated', Carbon::now()->format('Y-m-d'))->count();
+        $totalProducts = Product::where('node_id', $nodeId)->count();
+        return $totalProducts == $updatedProducts ? true : false;
+    }
+
+    function updateRequestCounter($nodeId)
+    {
+        $requestCounter = RapidApiSheinRequestTrackers::where('node_id', $nodeId)->where('last_updated', Carbon::now()->format('Y-m-d'))->first();
+        $finalCounter = ($requestCounter?->request_count ?? 0) + Session::get('request_counter', 0);
+        Session::put('request_counter', 0);
+        RapidApiSheinRequestTrackers::updateOrCreate([
+            'node_id' => $nodeId,
+            'last_updated' => Carbon::now()->format('Y-m-d')
+        ], [
+            'node_id' => $nodeId,
+            'last_updated' => Carbon::now()->format('Y-m-d'),
+            'request_count' => $finalCounter
+        ]);
+    }
+
     function updateTrackerISFinishedStatus($trackers, $nodeId)
     {
         if (!$trackers)
-            $trackers = FetchIngProductTrackers::where('node_id', $nodeId)->first();
+            $trackers = FetchIngProductTrackers::where('node_id', $nodeId)->where('last_updated', Carbon::now()->format('Y-m-d'))->first();
         $trackers->is_finished = 1;
         $trackers->save();
+        $this->updateRequestCounter($nodeId);
     }
 
     function extractProductDetails(array $product): array

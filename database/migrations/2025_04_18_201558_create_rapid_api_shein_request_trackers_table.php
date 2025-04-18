@@ -13,13 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('fetch_product_trackers', function (Blueprint $table) {
+        Schema::create('rapid_api_shein_request_trackers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('node_id');
-            $table->integer('total_products');
-            $table->integer('last_page');
-            $table->date('last_updated')->nullable();
-            $table->boolean('is_finished')->default(0);
+            $table->string('node_id');
+            $table->date('last_updated');
+            $table->integer('request_count')->default(0);
             $table->timestamps();
         });
     }
@@ -31,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('fetch_product_trackers');
+        Schema::dropIfExists('rapid_api_shein_request_trackers');
     }
 };

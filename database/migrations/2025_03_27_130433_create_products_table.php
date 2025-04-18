@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('barcode')->nullable();
             $table->string('primary_image')->nullable();
             $table->date('creation_date')->nullable();
+            $table->date('last_updated')->nullable();
             $table->boolean('view_in_app')->default(0);
             $table->boolean('is_lowest_price')->default(0);
             $table->boolean('is_highest_sales')->default(0);

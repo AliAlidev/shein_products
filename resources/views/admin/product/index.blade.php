@@ -133,7 +133,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label style="font-weight: bolder; font-size: 14px">Arabic Name:</label>
-                                <p class="detail-ar-name form-control-plaintext"></p>
+                                <p class="detail-ar-name form-control-plaintext" style="direction: rtl"></p>
                             </div>
                             <div class="form-group">
                                 <label style="font-weight: bolder; font-size: 14px">English Name:</label>
@@ -147,7 +147,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label style="font-weight: bolder; font-size: 14px">Arabic Brand:</label>
-                                <p class="detail-ar-brand form-control-plaintext"></p>
+                                <p class="detail-ar-brand form-control-plaintext" style="direction: rtl"></p>
                             </div>
                             <div class="form-group">
                                 <label style="font-weight: bolder; font-size: 14px">English Brand:</label>
@@ -163,7 +163,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label style="font-weight: bolder; font-size: 14px">Arabic Description:</label>
-                                <p class="detail-ar-desc form-control-plaintext"></p>
+                                <p class="detail-ar-desc form-control-plaintext" style="direction: rtl"></p>
                             </div>
                         </div>
                         <div class="col-md-6">
