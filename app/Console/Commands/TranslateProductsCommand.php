@@ -29,6 +29,6 @@ class TranslateProductsCommand extends Command
      */
     public function handle()
     {
-        app(ChatGPTTranslationService::class)->translateBulkRecords();
+        // app(ChatGPTTranslationService::class)->translateBulkRecords();
     }
 }

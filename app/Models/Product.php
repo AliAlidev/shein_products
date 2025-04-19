@@ -60,7 +60,7 @@ class Product extends Model
         return $this->hasOne(SheinNode::class, 'id', 'node_id');
     }
 
-    public function getFinalPriceAttribute()
+    public function getPriceRuleAttribute()
     {
         $basePrice = $this->price;
         $rule = PriceRule::where('apply_per', 'Product')->whereJsonContains('apply_to', (string)$this->external_id)->first();
@@ -68,14 +68,7 @@ class Product extends Model
             $rule = PriceRule::where('apply_per', 'Category')->whereJsonContains('apply_to', (string)$this->category_id)->first();
         if (!$rule)
             $rule = PriceRule::where('apply_per', 'Default')->first();
-        if ($rule) {
-            if ($rule->type === 'fixed') {
-                $basePrice += $rule->value;
-            } elseif ($rule->type === 'percentage') {
-                $basePrice += ($basePrice * ($rule->value / 100));
-            }
-        }
-        return $this->currencyConversion(getDesiredCurrency(), $basePrice);
+        return $rule;
     }
 
     function getTextualPrice($number)
@@ -125,7 +118,7 @@ class Product extends Model
         ];
     }
 
-    function formatAmount($number, $decimals = 0, $decimalPoint = '.', $thousandsSep = ',')
+    function formatAmount($number, $decimals = 2, $decimalPoint = '.', $thousandsSep = ',')
     {
         $factor = pow(10, $decimals);
         $truncated = floor($number * $factor) / $factor;

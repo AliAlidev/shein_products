@@ -16,15 +16,32 @@ class ApiProductController extends Controller
         $page = $request->page ?? 1;
         $perPage = $request->per_page ?? 10;
         $categoryId = $request->category_id ?? null;
-        $products = Product::orderBy('created_at', 'desc')->whereHas('details', function ($qrt) {
-            $qrt->whereJsonLength('coupon_prices','>', 0);
-        })->with([
-            'details',
-            'brand',
-            'category'
-        ])->when($categoryId, function ($q) use ($categoryId) {
-            $q->where('category_id', $categoryId);
-        })->where('view_in_app', 0)->paginate($perPage, ['*'], 'page', $page);
+        $hasCoupon = $request->has_coupon    ?? null;
+        $sectionName = $request->section_name    ?? null;
+        $sectionType = $request->section_type    ?? null;
+        $products = Product::orderBy('created_at', 'desc')->when($hasCoupon, function ($q) {
+            $q->whereHas('details', function ($qrt) {
+                $qrt->whereJsonLength('coupon_prices', '>', 0);
+            });
+        })
+            ->when($sectionName, function ($q) use ($sectionName) {
+                $q->whereHas('node', function ($qrt) use ($sectionName) {
+                    $qrt->where('channel', $sectionName);
+                });
+            })
+            ->when($sectionType, function ($q) use ($sectionType) {
+                $q->whereHas('node', function ($qrt) use ($sectionType) {
+                    $qrt->where('root_name', $sectionType);
+                });
+            })
+            ->with([
+                'details',
+                'brand',
+                'category'
+            ])->when($categoryId, function ($q) use ($categoryId) {
+                $q->where('category_id', $categoryId);
+            })->where('view_in_app', 1)
+            ->paginate($perPage, ['*'], 'page', $page);
         return (ProductResource::collection($products))->additional(['success' => true, 'message' => ''])->response();
     }
 
@@ -36,6 +53,9 @@ class ApiProductController extends Controller
             $qrt->whereIn('channel', $channel);
         })->whereHas('products')->distinct('root_name')
             ->pluck('root_name')
+            ->mapWithKeys(function ($type) {
+                return [$type => getTranslatedSectionTypes($type)];
+            })
             ->toArray();
         return response()->json([
             'success' => true,
@@ -69,7 +89,14 @@ class ApiProductController extends Controller
 
     function getSections()
     {
-        $sections = SheinNode::whereHas('products')->select('channel')->distinct('channel')->pluck('channel')->toArray();
+        $sections = SheinNode::whereHas('products')
+            ->select('channel')
+            ->distinct()
+            ->pluck('channel')
+            ->mapWithKeys(function ($section) {
+                return [$section => getTranslatedSection($section)];
+            })
+            ->toArray();
         return response()->json([
             'success' => true,
             'message' => '',

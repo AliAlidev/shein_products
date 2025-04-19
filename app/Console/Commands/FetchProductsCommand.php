@@ -28,6 +28,6 @@ class FetchProductsCommand extends Command
      */
     public function handle()
     {
-        return app(ProductController::class)->syncProductsCommand('Home');
+        // return app(ProductController::class)->syncProductsCommand('Home');
     }
 }

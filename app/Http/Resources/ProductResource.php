@@ -15,30 +15,54 @@ class ProductResource extends JsonResource
     public function toArray($request)
     {
         $couponData = $this->details->coupon_prices ?? null;
-        return [
+        $priceRule = $this->priceRule;
+        $finalPrice = $this->price;
+        $finalCouponPrice = $couponData[0]['after_coupon_price']['amount'] ?? 0;
+        $ruleAmount = 0;
+
+        if ($priceRule) {
+            if ($priceRule->type === 'fixed') {
+                $finalPrice += $priceRule->value;
+                $finalCouponPrice += $priceRule->value;
+                $ruleAmount = $priceRule->value;
+            } elseif ($priceRule->type === 'percentage') {
+                $finalPrice += ($finalPrice * ($priceRule->value / 100));
+                $finalCouponPrice += ($finalCouponPrice * ($priceRule->value / 100));
+                $ruleAmount = ($finalCouponPrice * ($priceRule->value / 100));
+            }
+        }
+        $data = [
             'id' => $this->external_id,
             'name' => getCurrentLanguage() == 'ar' ? $this->ar_name : $this->en_name,
             'description' => getCurrentLanguage() == 'ar' ? $this->ar_description : $this->en_description,
             'slug' => $this->slug,
-            'currency' => getDesiredCurrency(),
-            'original_price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $this->price)),
-            'price' => $this->formatAmount($this->finalPrice),
-            'textural_price' => $this->getTextualPrice($this->finalPrice),
             'category' =>  getCurrentLanguage() == 'ar' ? $this->category?->name_ar : $this->category?->name_en,
             'primary_image' => $this->primaryImage(),
             'images' => $this->images,
             'store' => $this->store,
-            'video_url' => $this->video_url,
+            'video_url' => is_numeric($this->video_url) ? '' : $this->video_url,
             'brand' => optional($this->brand)['brand_name_' . getCurrentLanguage()],
-            'section' => $this->node->channel,
-            'section_type' => $this->node->root_name,
+            'section' => getTranslatedSection($this->node->channel),
+            'section_type' => getTranslatedSectionTypes($this->node->root_name),
             'amount' => $this->details->stock,
             'sold_out_status' => $this->details->sold_out_status,
             'is_on_sale' => $this->details->is_on_sale,
-            'coupon_discount' => $couponData ? $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $couponData[0]['discount_value']['amount'])) : null,
-            'coupon_code' => $couponData ? $couponData[0]['coupon_code'] ?? null : null,
-            'coupon_end_time' => $couponData ? date('Y-m-d H:i:s', $couponData[0]['end_time']) ?? null : null,
-            'price_after_coupon' => $couponData ? $this->formatAmount($this->currencyConversion(getDesiredCurrency(), ($this->finalPrice - $couponData[0]['discount_value']['amount']))) : null
+            'original_price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $this->price)),  // the price before adding our rulePrice amount
+            'price' => $this->currencyConversion(getDesiredCurrency(), $finalPrice),  // the price after adding our rulePrice amount
+            'currency' => getDesiredCurrency(),
+            'textural_price' => $this->getTextualPrice($this->price),   //  textual value of the price
+            'rule_amount' => $ruleAmount,  // the amount of the applied priceRule
+            'rule_type' => $priceRule->type ?? null,  // the type of the applied priceRule fixed or percentage
+            'shein_url' => 'https://us.shein.com/' . $this->slug . '-p-' . $this->external_id . '.html',
+            'last_updated' => $this->last_updated
         ];
+        if ($couponData) {
+            $data['coupon_end_time'] = date('Y-m-d H:i:s', $couponData[0]['end_time']);
+            $data['coupon_code'] = $couponData ? $couponData[0]['coupon_code'] ?? null : null;
+            $data['coupon_discount'] = $couponData[0]['discount_percent'] ?? 0;  // the discount percentage of the coupon
+            $data['coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalCouponPrice)) ?? 0; // coupon price after adding our priceRule amount
+            $data['original_coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), ($couponData[0]['after_coupon_price']['amount']))) ?? 0; // coupon price before adding our priceRule amount
+        }
+        return  $data;
     }
 }
