@@ -1,16 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\Auth\LoginController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\admin\PriceRuleController;
+use App\Http\Controllers\Admin\PriceRuleController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::get('login', [LoginController::class, 'showLoginForm']);
-
-// Route::get('home', [DashboardController::class, 'index'])->name('dashboard.index');
 
 Route::middleware('auth')->controller(PriceRuleController::class)->group(function () {
     Route::match(['get', 'post'], 'price-rules', 'index')->name('price_rules');
