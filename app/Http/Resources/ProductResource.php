@@ -27,9 +27,9 @@ class ProductResource extends JsonResource
                 $ruleAmount = $couponRuleAmount = $priceRule->value;
             } elseif ($priceRule->type === 'percentage') {
                 $finalPrice += ($finalPrice * ($priceRule->value / 100));
+                $couponRuleAmount = ($finalCouponPrice * ($priceRule->value / 100));
                 $finalCouponPrice += ($finalCouponPrice * ($priceRule->value / 100));
                 $ruleAmount = ($this->price * ($priceRule->value / 100));
-                $couponRuleAmount = ($finalCouponPrice * ($priceRule->value / 100));
             }
         }
         $data = [
