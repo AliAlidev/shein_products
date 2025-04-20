@@ -44,7 +44,7 @@ class ProductResource extends JsonResource
             'brand' => optional($this->brand)['brand_name_' . getCurrentLanguage()],
             'section' => getTranslatedSection($this->node->channel),
             'section_type' => getTranslatedSectionTypes($this->node->root_name),
-            'amount' => $this->details->stock,
+            'stock' => $this->details->stock,
             'sold_out_status' => $this->details->sold_out_status,
             'is_on_sale' => $this->details->is_on_sale,
             'original_price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $this->price)),  // the price before adding our rulePrice amount
