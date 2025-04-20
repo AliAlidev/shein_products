@@ -48,7 +48,7 @@ class ProductResource extends JsonResource
             'sold_out_status' => $this->details->sold_out_status,
             'is_on_sale' => $this->details->is_on_sale,
             'original_price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $this->price)),  // the price before adding our rulePrice amount
-            'price' => $this->currencyConversion(getDesiredCurrency(), $finalPrice),  // the price after adding our rulePrice amount
+            'price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalPrice)),  // the price after adding our rulePrice amount
             'currency' => getDesiredCurrency(),
             'textural_price' => $this->getTextualPrice($this->price),   //  textual value of the price
             'rule_amount' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $ruleAmount)),  // the amount of the applied priceRule
