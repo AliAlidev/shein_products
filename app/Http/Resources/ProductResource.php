@@ -18,17 +18,18 @@ class ProductResource extends JsonResource
         $priceRule = $this->priceRule;
         $finalPrice = $this->price;
         $finalCouponPrice = $couponData[0]['after_coupon_price']['amount'] ?? 0;
-        $ruleAmount = 0;
+        $ruleAmount = $couponRuleAmount = 0;
 
         if ($priceRule) {
             if ($priceRule->type === 'fixed') {
                 $finalPrice += $priceRule->value;
                 $finalCouponPrice += $priceRule->value;
-                $ruleAmount = $priceRule->value;
+                $ruleAmount = $couponRuleAmount = $priceRule->value;
             } elseif ($priceRule->type === 'percentage') {
                 $finalPrice += ($finalPrice * ($priceRule->value / 100));
                 $finalCouponPrice += ($finalCouponPrice * ($priceRule->value / 100));
                 $ruleAmount = ($this->price * ($priceRule->value / 100));
+                $couponRuleAmount = ($finalCouponPrice * ($priceRule->value / 100));
             }
         }
         $data = [
@@ -62,6 +63,7 @@ class ProductResource extends JsonResource
             $data['coupon_discount'] = $couponData[0]['discount_percent'] ?? 0;  // the discount percentage of the coupon
             $data['coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalCouponPrice)) ?? 0; // coupon price after adding our priceRule amount
             $data['original_coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), ($couponData[0]['after_coupon_price']['amount']))) ?? 0; // coupon price before adding our priceRule amount
+            $data['coupon_rule_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $couponRuleAmount)) ?? 0; // coupon price after adding our priceRule amount
         }
         return  $data;
     }
