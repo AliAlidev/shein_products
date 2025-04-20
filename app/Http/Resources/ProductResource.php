@@ -50,9 +50,9 @@ class ProductResource extends JsonResource
             'is_on_sale' => $this->details->is_on_sale,
             'original_price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $this->price)),  // the price before adding our rulePrice amount
             'price' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalPrice)),  // the price after adding our rulePrice amount
+            'rule_amount' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $ruleAmount)),  // the amount of the applied priceRule
             'currency' => getDesiredCurrency(),
             'textual_price' => $this->getTextualPrice($finalPrice),   //  textual value of the price
-            'rule_amount' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $ruleAmount)),  // the amount of the applied priceRule
             'rule_type' => $priceRule->type ?? null,  // the type of the applied priceRule fixed or percentage
             'shein_url' => 'https://us.shein.com/' . $this->slug . '-p-' . $this->external_id . '.html',
             'last_updated' => $this->last_updated
@@ -61,8 +61,8 @@ class ProductResource extends JsonResource
             $data['coupon_end_time'] = date('Y-m-d H:i:s', $couponData[0]['end_time']);
             $data['coupon_code'] = $couponData ? $couponData[0]['coupon_code'] ?? null : null;
             $data['coupon_discount'] = $couponData[0]['discount_percent'] ?? 0;  // the discount percentage of the coupon
-            $data['coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalCouponPrice)) ?? 0; // coupon price after adding our priceRule amount
             $data['original_coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), ($couponData[0]['after_coupon_price']['amount']))) ?? 0; // coupon price before adding our priceRule amount
+            $data['coupon_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $finalCouponPrice)) ?? 0; // coupon price after adding our priceRule amount
             $data['coupon_rule_price'] = $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $couponRuleAmount)) ?? 0; // coupon price after adding our priceRule amount
         }
         return  $data;
