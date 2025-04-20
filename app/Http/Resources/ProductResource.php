@@ -51,7 +51,7 @@ class ProductResource extends JsonResource
             'price' => $this->currencyConversion(getDesiredCurrency(), $finalPrice),  // the price after adding our rulePrice amount
             'currency' => getDesiredCurrency(),
             'textural_price' => $this->getTextualPrice($this->price),   //  textual value of the price
-            'rule_amount' => $ruleAmount,  // the amount of the applied priceRule
+            'rule_amount' => $this->formatAmount($this->currencyConversion(getDesiredCurrency(), $ruleAmount)),  // the amount of the applied priceRule
             'rule_type' => $priceRule->type ?? null,  // the type of the applied priceRule fixed or percentage
             'shein_url' => 'https://us.shein.com/' . $this->slug . '-p-' . $this->external_id . '.html',
             'last_updated' => $this->last_updated
