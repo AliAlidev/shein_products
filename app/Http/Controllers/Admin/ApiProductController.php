@@ -19,11 +19,16 @@ class ApiProductController extends Controller
         $hasCoupon = $request->has_coupon    ?? null;
         $sectionName = $request->section_name    ?? null;
         $sectionType = $request->section_type    ?? null;
-        $products = Product::orderBy('created_at', 'desc')->when($hasCoupon, function ($q) {
-            $q->whereHas('details', function ($qrt) {
-                $qrt->whereJsonLength('coupon_prices', '>', 0);
-            });
-        })
+        $productId = $request->product_id    ?? null;
+        $products = Product::orderBy('created_at', 'desc')
+            ->when($hasCoupon, function ($q) {
+                $q->whereHas('details', function ($qrt) {
+                    $qrt->whereJsonLength('coupon_prices', '>', 0);
+                });
+            })
+            ->when($productId, function ($q) use ($productId) {
+                $q->where('external_id', $productId);
+            })
             ->when($sectionName, function ($q) use ($sectionName) {
                 $q->whereHas('node', function ($qrt) use ($sectionName) {
                     $qrt->where('channel', $sectionName);
