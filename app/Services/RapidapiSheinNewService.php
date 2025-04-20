@@ -26,9 +26,9 @@ class RapidapiSheinNewService
         $this->apiHost = config('services.rapidapi_shein.host');
         $this->apiKey = config('services.rapidapi_shein.key');
 
-        // $jsonPath = storage_path('app/product_trackers.json');
-        // $jsonString = file_get_contents($jsonPath);
-        // $this->productsTrackerFile = json_decode($jsonString, true);
+        $jsonPath = storage_path('app/product_trackers.json');
+        $jsonString = file_get_contents($jsonPath);
+        $this->productsTrackerFile = json_decode($jsonString, true);
     }
 
     function getTabs()
