@@ -73,6 +73,7 @@ class Product extends Model
 
     function getTextualPrice($number)
     {
+        $number = $this->currencyConversion(getDesiredCurrency(), $number);
         $fmt = new NumberFormatter('en', NumberFormatter::SPELLOUT);
         $number = number_format($number, 2, '.', '');
         [$main, $fraction] = explode('.', $number);
